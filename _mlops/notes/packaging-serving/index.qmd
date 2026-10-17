@@ -1,0 +1,13 @@
+---
+title: "packaging & serving"
+toc: false
+---
+
+packaging models and making predictions available.
+
+::: {.topic-index}
+
+- [dependencies & docker](containers.qmd)
+- [apis, batch & real-time inference](serving.qmd)
+
+:::

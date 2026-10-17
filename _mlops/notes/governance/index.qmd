@@ -1,0 +1,13 @@
+---
+title: "governance & security"
+toc: false
+---
+
+documenting, securing, and reviewing ml systems.
+
+::: {.topic-index}
+
+- [access controls & privacy](security.qmd)
+- [documentation, fairness & approvals](governance.qmd)
+
+:::

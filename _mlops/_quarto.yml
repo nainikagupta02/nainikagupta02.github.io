@@ -1,0 +1,109 @@
+project:
+  type: website
+  output-dir: _site
+website:
+  title: "mlops notes"
+  site-url: "https://nainikagupta02.github.io/notes/mlops/"
+  page-navigation: true
+  back-to-top-navigation: true
+  bread-crumbs: false
+  search:
+    location: sidebar
+    type: textbox
+  sidebar:
+    style: docked
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: start here
+      - section: "foundations & lifecycle"
+        href: notes/foundations/index.qmd
+        contents:
+          - href: notes/foundations/overview.qmd
+            text: "what is mlops?"
+          - href: notes/foundations/lifecycle.qmd
+            text: "the model lifecycle"
+      - section: "data pipelines & validation"
+        href: notes/data-pipelines/index.qmd
+        contents:
+          - href: notes/data-pipelines/ingestion.qmd
+            text: "data ingestion & preparation"
+          - href: notes/data-pipelines/validation.qmd
+            text: "validation & leakage prevention"
+          - href: notes/data-pipelines/versioning.qmd
+            text: "data versioning & feature stores"
+      - section: "experiments & reproducibility"
+        href: notes/experiments/index.qmd
+        contents:
+          - href: notes/experiments/tracking.qmd
+            text: "experiment tracking"
+          - href: notes/experiments/reproducibility.qmd
+            text: "code, data & environment versioning"
+          - href: notes/experiments/registry.qmd
+            text: "model registries & lineage"
+      - section: "packaging & serving"
+        href: notes/packaging-serving/index.qmd
+        contents:
+          - href: notes/packaging-serving/containers.qmd
+            text: "dependencies & docker"
+          - href: notes/packaging-serving/serving.qmd
+            text: "apis, batch & real-time inference"
+      - section: "testing, ci/cd & orchestration"
+        href: notes/automation/index.qmd
+        contents:
+          - href: notes/automation/testing.qmd
+            text: "code, data & model tests"
+          - href: notes/automation/ci-cd.qmd
+            text: "ci/cd pipelines"
+          - href: notes/automation/orchestration.qmd
+            text: "orchestration & continuous training"
+      - section: "deployment & infrastructure"
+        href: notes/deployment/index.qmd
+        contents:
+          - href: notes/deployment/infrastructure.qmd
+            text: "cloud infrastructure & scaling"
+          - href: notes/deployment/releases.qmd
+            text: "staged releases & rollback"
+          - href: notes/deployment/tradeoffs.qmd
+            text: "latency, reliability & cost"
+      - section: "monitoring & retraining"
+        href: notes/monitoring/index.qmd
+        contents:
+          - href: notes/monitoring/monitoring.qmd
+            text: "system & model monitoring"
+          - href: notes/monitoring/drift.qmd
+            text: "data drift & concept drift"
+          - href: notes/monitoring/retraining.qmd
+            text: "feedback, retraining & validation"
+      - section: "governance & security"
+        href: notes/governance/index.qmd
+        contents:
+          - href: notes/governance/security.qmd
+            text: "access controls & privacy"
+          - href: notes/governance/governance.qmd
+            text: "documentation, fairness & approvals"
+    tools:
+      - icon: house
+        href: https://nainikagupta02.github.io/
+        text: personal website
+  page-footer:
+    left: "notes by nainika gupta"
+    right:
+      - text: all notes
+        href: https://nainikagupta02.github.io/notes/
+      - text: ml notes
+        href: https://nainikagupta02.github.io/ML-notes/
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-title: on this page
+    toc-depth: 2
+    number-sections: false
+    code-copy: true
+    code-overflow: wrap
+    lang: en
+language: _language.yml
+execute:
+  enabled: false

@@ -1,0 +1,14 @@
+---
+title: "testing, ci/cd & orchestration"
+toc: false
+---
+
+testing and automating repeatable ml workflows.
+
+::: {.topic-index}
+
+- [code, data & model tests](testing.qmd)
+- [ci/cd pipelines](ci-cd.qmd)
+- [orchestration & continuous training](orchestration.qmd)
+
+:::

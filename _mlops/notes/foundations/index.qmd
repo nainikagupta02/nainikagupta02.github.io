@@ -1,0 +1,13 @@
+---
+title: "foundations & lifecycle"
+toc: false
+---
+
+the ideas behind operating ml systems.
+
+::: {.topic-index}
+
+- [what is mlops?](overview.qmd)
+- [the model lifecycle](lifecycle.qmd)
+
+:::

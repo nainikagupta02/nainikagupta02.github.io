@@ -1,0 +1,7 @@
+---
+title: "dependencies & docker"
+---
+
+[notes coming soon]{.note-status}
+
+this page is ready to be filled in.

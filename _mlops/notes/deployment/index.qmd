@@ -1,0 +1,14 @@
+---
+title: "deployment & infrastructure"
+toc: false
+---
+
+releasing models and managing the systems around them.
+
+::: {.topic-index}
+
+- [cloud infrastructure & scaling](infrastructure.qmd)
+- [staged releases & rollback](releases.qmd)
+- [latency, reliability & cost](tradeoffs.qmd)
+
+:::

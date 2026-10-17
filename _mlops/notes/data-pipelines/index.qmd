@@ -1,0 +1,14 @@
+---
+title: "data pipelines & validation"
+toc: false
+---
+
+reliable data and features for training and serving.
+
+::: {.topic-index}
+
+- [data ingestion & preparation](ingestion.qmd)
+- [validation & leakage prevention](validation.qmd)
+- [data versioning & feature stores](versioning.qmd)
+
+:::

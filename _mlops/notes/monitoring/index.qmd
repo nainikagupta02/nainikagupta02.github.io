@@ -1,0 +1,14 @@
+---
+title: "monitoring & retraining"
+toc: false
+---
+
+observing production systems and responding to change.
+
+::: {.topic-index}
+
+- [system & model monitoring](monitoring.qmd)
+- [data drift & concept drift](drift.qmd)
+- [feedback, retraining & validation](retraining.qmd)
+
+:::

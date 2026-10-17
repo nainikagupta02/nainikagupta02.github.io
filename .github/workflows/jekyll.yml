@@ -37,11 +37,21 @@ jobs:
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: '1.9.38'
+      - name: Build MLOps notebook
+        run: quarto render _mlops
       - name: Build with Jekyll
         # Outputs to the './_site' directory by default
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
         env:
           JEKYLL_ENV: production
+      - name: Include MLOps notebook
+        run: |
+          mkdir -p _site/notes/mlops
+          cp -R _mlops/_site/. _site/notes/mlops/
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5.0.0
 

@@ -1,0 +1,65 @@
+---
+title: "mlops notes"
+subtitle: "a notebook by nainika gupta"
+toc: false
+---
+
+feb 2025 – dec 2025
+
+notes from my master’s studies, organised around the lifecycle of production ml systems.
+
+the structure is ready; individual notes will be added gradually.
+
+::: {.topic-grid}
+
+::: {.topic-card}
+## [foundations & lifecycle](notes/foundations/index.qmd)
+
+the ideas behind operating ml systems.
+:::
+
+::: {.topic-card}
+## [data pipelines & validation](notes/data-pipelines/index.qmd)
+
+reliable data and features for training and serving.
+:::
+
+::: {.topic-card}
+## [experiments & reproducibility](notes/experiments/index.qmd)
+
+tracking experiments and reproducing model results.
+:::
+
+::: {.topic-card}
+## [packaging & serving](notes/packaging-serving/index.qmd)
+
+packaging models and making predictions available.
+:::
+
+::: {.topic-card}
+## [testing, ci/cd & orchestration](notes/automation/index.qmd)
+
+testing and automating repeatable ml workflows.
+:::
+
+::: {.topic-card}
+## [deployment & infrastructure](notes/deployment/index.qmd)
+
+releasing models and managing the systems around them.
+:::
+
+::: {.topic-card}
+## [monitoring & retraining](notes/monitoring/index.qmd)
+
+observing production systems and responding to change.
+:::
+
+::: {.topic-card}
+## [governance & security](notes/governance/index.qmd)
+
+documenting, securing, and reviewing ml systems.
+:::
+
+:::
+
+[back to all notes](https://nainikagupta02.github.io/notes/)
