@@ -2,6 +2,12 @@
 title: "validation & leakage prevention"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- schema and data-quality checks
+- leakage and appropriate dataset splits
+- consistency between training and serving features
+
+notes will be added here as this section develops.

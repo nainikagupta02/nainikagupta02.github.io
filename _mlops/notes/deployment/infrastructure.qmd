@@ -2,6 +2,12 @@
 title: "cloud infrastructure & scaling"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- compute, storage, and networking
+- infrastructure as code and environment management
+- resource allocation and scaling
+
+notes will be added here as this section develops.

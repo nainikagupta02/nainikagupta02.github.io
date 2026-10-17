@@ -2,6 +2,12 @@
 title: "apis, batch & real-time inference"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- batch and online prediction workflows
+- prediction api design and input validation
+- keeping preprocessing consistent at inference time
+
+notes will be added here as this section develops.

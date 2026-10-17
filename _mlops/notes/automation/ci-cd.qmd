@@ -2,6 +2,12 @@
 title: "ci/cd pipelines"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- checks triggered by code changes
+- building and validating release artifacts
+- delivery, deployment, and approval gates
+
+notes will be added here as this section develops.

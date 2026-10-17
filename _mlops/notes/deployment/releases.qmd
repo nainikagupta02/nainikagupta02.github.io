@@ -2,6 +2,12 @@
 title: "staged releases & rollback"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- staging and production environments
+- canary releases, shadow testing, and a/b testing
+- release criteria and rollback plans
+
+notes will be added here as this section develops.

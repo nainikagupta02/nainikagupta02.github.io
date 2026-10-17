@@ -2,6 +2,12 @@
 title: "data versioning & feature stores"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- dataset snapshots and version control
+- feature definitions and reuse
+- feature stores and when they are useful
+
+notes will be added here as this section develops.

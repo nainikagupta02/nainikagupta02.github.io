@@ -2,6 +2,12 @@
 title: "experiment tracking"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- logging parameters, metrics, and artifacts
+- comparing runs and recording configurations
+- experiment tracking tools and workflow integration
+
+notes will be added here as this section develops.

@@ -2,6 +2,12 @@
 title: "model registries & lineage"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- model artifacts, versions, and metadata
+- tracing a model back to its training run
+- model review and promotion between environments
+
+notes will be added here as this section develops.

@@ -2,6 +2,12 @@
 title: "access controls & privacy"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- access controls and secrets management
+- protecting sensitive data
+- securing model artifacts and prediction services
+
+notes will be added here as this section develops.

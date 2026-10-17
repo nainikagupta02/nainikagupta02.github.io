@@ -2,6 +2,12 @@
 title: "latency, reliability & cost"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- latency, throughput, and resource use
+- availability and failure recovery
+- measuring cost against workload needs
+
+notes will be added here as this section develops.

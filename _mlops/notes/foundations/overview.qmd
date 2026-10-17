@@ -2,6 +2,12 @@
 title: "what is mlops?"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- mlops, software engineering, and devops
+- the gap between a trained model and a working ml system
+- manual workflows and increasing levels of automation
+
+notes will be added here as this section develops.

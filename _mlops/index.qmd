@@ -8,7 +8,7 @@ feb 2025 – dec 2025
 
 notes from my master’s studies, organised around the lifecycle of production ml systems.
 
-the structure is ready; individual notes will be added gradually.
+these notes grew out of things i had to learn as i took on more work, from keeping experiments reproducible to understanding how models are deployed and maintained. the topics reflect that progression, with new ideas added as i needed them.
 
 ::: {.topic-grid}
 

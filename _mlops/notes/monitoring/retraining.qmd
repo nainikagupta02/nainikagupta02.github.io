@@ -2,6 +2,12 @@
 title: "feedback, retraining & validation"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- collecting feedback and observed outcomes
+- deciding when to retrain
+- evaluating candidate models before redeployment
+
+notes will be added here as this section develops.

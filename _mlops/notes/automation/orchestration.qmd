@@ -2,6 +2,12 @@
 title: "orchestration & continuous training"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- pipeline tasks and dependencies
+- scheduling, retries, and failure handling
+- training triggers and validation before release
+
+notes will be added here as this section develops.

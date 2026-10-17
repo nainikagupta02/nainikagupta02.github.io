@@ -2,6 +2,12 @@
 title: "data ingestion & preparation"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- data sources, ingestion, and storage
+- cleaning, labelling, and transformations
+- repeatable pipelines and handling failed runs
+
+notes will be added here as this section develops.

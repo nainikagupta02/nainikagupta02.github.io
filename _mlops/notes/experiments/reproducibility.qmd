@@ -2,6 +2,12 @@
 title: "code, data & environment versioning"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- linking code, data, and model versions
+- dependency management and environment configuration
+- randomness, seeds, and reproducibility limits
+
+notes will be added here as this section develops.

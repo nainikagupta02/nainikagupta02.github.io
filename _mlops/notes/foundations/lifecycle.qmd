@@ -2,6 +2,12 @@
 title: "the model lifecycle"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- problem definition and data preparation
+- experimentation, evaluation, and release
+- monitoring, feedback, and model retirement
+
+notes will be added here as this section develops.

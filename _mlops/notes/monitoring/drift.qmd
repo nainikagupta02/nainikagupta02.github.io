@@ -2,6 +2,12 @@
 title: "data drift & concept drift"
 ---
 
-[notes coming soon]{.note-status}
+[outline]{.note-status}
 
-this page is ready to be filled in.
+## topics
+
+- changes in input distributions
+- changes in the relationship between inputs and outcomes
+- investigating drift alongside model performance
+
+notes will be added here as this section develops.
