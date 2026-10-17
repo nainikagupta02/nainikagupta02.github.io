@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - examples/**
 website:
   title: "mlops notes"
   site-url: "https://nainikagupta02.github.io/notes/mlops/"

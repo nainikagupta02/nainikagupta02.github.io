@@ -3,7 +3,7 @@ title: "foundations & lifecycle"
 toc: false
 ---
 
-the ideas behind operating ml systems.
+start with the core ideas, then follow a small model through a repeatable workflow. both notes include practical steps and links to official documentation.
 
 ::: {.topic-index}
 

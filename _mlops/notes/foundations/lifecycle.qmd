@@ -2,12 +2,69 @@
 title: "the model lifecycle"
 ---
 
-[outline]{.note-status}
+## the loop
 
-## topics
+- define → prepare data → train → validate → release → monitor → improve or retire.
+- feedback can send you back to the problem definition or data, rather than always leading to retraining. [aws lifecycle overview](https://aws.amazon.com/what-is/mlops/)
 
-- problem definition and data preparation
-- experimentation, evaluation, and release
-- monitoring, feedback, and model retirement
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| stage | what to do | what to keep |
+|---|---|---|
+| define | specify the user, prediction time, target, and success metric | task definition and baseline |
+| prepare | check data quality; choose splits that reflect intended use | data version, schema, split rules |
+| train | fit preprocessing and candidates on training data | code, parameters, environment |
+| validate | compare candidates and error patterns; freeze choices before final testing | evaluation report and release criteria |
+| release | package the pipeline; test predictions in the target environment | versioned artifact and rollback plan |
+| monitor | track service health and model quality when outcomes arrive | logs, metrics, alerts, owner |
+| improve / retire | investigate changes; validate replacements or stop an obsolete system | decision and version history |
+
+:::
+
+## keep evaluation honest
+
+- **training:** learn preprocessing and model parameters.
+- **validation / cross-validation:** choose features, hyperparameters, thresholds, and models.
+- **test:** estimate final performance after those choices are fixed; repeatedly tuning to it turns it into validation data.
+- fit transformations within training folds. a pipeline helps prevent preprocessing leakage, but cannot fix a leaked target or an inappropriate split. [scikit-learn pitfalls](https://scikit-learn.org/stable/common_pitfalls.html)
+- random row splits suit the independent synthetic example below; use group or time-aware splits when observations share entities or deployment predicts the future. [model selection guide](https://scikit-learn.org/stable/model_selection.html)
+
+## try it locally
+
+- goal: run a small binary-classification experiment, save its preprocessing and model together, and verify reloaded predictions.
+- [download the example script](../../examples/lifecycle_demo.py) into an empty project folder.
+- these commands assume a unix-like shell and an installed `python3`:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install scikit-learn numpy joblib
+python lifecycle_demo.py --output artifacts/run-001
+python -m pip freeze > requirements-lock.txt
+```
+
+- the script makes synthetic data, creates 60/20/20 train/validation/test splits, and compares three logistic-regression settings against a constant-probability baseline using validation roc auc.
+- it selects the best validation candidate, evaluates it on the held-out test set, and saves `pipeline.joblib` plus `run.json`.
+- the run record contains metrics, settings, split sizes, a dataset fingerprint, and package versions; commit the script and dependency file, and record the commit id alongside the run.
+- repeated runs need a new output folder, such as `artifacts/run-002`. keep the same environment when comparing reproducibility.
+
+```python
+# the central pattern used in the downloadable script
+model = make_pipeline(StandardScaler(), LogisticRegression(C=1.0))
+model.fit(x_train, y_train)  # the scaler sees training data only
+probabilities = model.predict_proba(x_val)[:, 1]
+joblib.dump(model, "pipeline.joblib")
+```
+
+- saving a pipeline is local packaging, not deployment; the example stops before serving or production monitoring.
+- retain compatible dependencies and load only trusted model files; pickle-based formats such as joblib can execute code when loaded. [model persistence guide](https://scikit-learn.org/stable/model_persistence.html)
+
+## turn the exercise into a workflow
+
+- add a test for input shape and invalid values, then a repeatable batch prediction command.
+- automate the training smoke test in ci; keep model-quality checks separate from code checks.
+- before releasing, define acceptable performance, service requirements, and how to restore the previous version.
+- after releasing, monitor input quality and service failures immediately; measure predictive quality as labels arrive.
+- drift is a cue to investigate. validate a retrained model before replacing the current one. [google’s validation and automation guide](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+
+next: [data pipelines & validation](../data-pipelines/index.qmd).
