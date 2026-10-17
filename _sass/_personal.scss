@@ -1,0 +1,83 @@
+/* Soft ivory and sage, with a matching warm dark theme. */
+:root {
+  --global-base-color: #526c5c;
+  --global-bg-color: #faf7f0;
+  --global-footer-bg-color: #efeee5;
+  --global-border-color: #dddcd0;
+  --global-dark-border-color: #a8b1a2;
+  --global-text-color: #38433c;
+  --global-text-color-light: #697268;
+  --global-link-color: #506b58;
+  --global-link-color-hover: #344c3d;
+  --global-link-color-visited: #6c645e;
+  --global-masthead-link-color: #4d5b50;
+  --global-masthead-link-color-hover: #344c3d;
+  --global-thead-color: #eeeee3;
+}
+
+html[data-theme="dark"] {
+  --global-base-color: #b2c4ae;
+  --global-bg-color: #272d29;
+  --global-footer-bg-color: #222823;
+  --global-border-color: #465148;
+  --global-dark-border-color: #738271;
+  --global-text-color: #ecebe2;
+  --global-text-color-light: #b9c0b5;
+  --global-link-color: #b2c4ae;
+  --global-link-color-hover: #d7e3cc;
+  --global-link-color-visited: #c5b9b0;
+  --global-masthead-link-color: #ecebe2;
+  --global-masthead-link-color-hover: #b2c4ae;
+  --global-thead-color: #343e36;
+}
+
+body {
+  line-height: 1.75;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.page__title {
+  font-size: 2.15em;
+  margin-bottom: 0.8em;
+}
+
+.page__content h2 {
+  font-size: 1.55em;
+  margin-top: 1.8em;
+  padding-bottom: 0.35em;
+}
+
+.page__content > h2:first-child {
+  margin-top: 0;
+}
+
+.sidebar .author__name {
+  font-family: $header-font-family;
+  font-size: 1.2em;
+  font-weight: 500;
+}
+
+.author__avatar img {
+  padding: 4px;
+  border: 1px solid var(--global-border-color);
+}
+
+.masthead__menu-item--lg a {
+  font-family: $header-font-family;
+  font-size: 1.15em;
+  font-weight: 500;
+}
+
+.page__content a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+::selection {
+  color: var(--global-bg-color);
+  background: var(--global-link-color);
+}

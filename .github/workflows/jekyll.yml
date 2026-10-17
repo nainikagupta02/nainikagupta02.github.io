@@ -4,7 +4,7 @@ name: Deploy Academic Pages template site to Pages
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches: ["main", "master"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -31,10 +31,11 @@ jobs:
       - name: Setup Ruby, JRuby and TruffleRuby
         uses: ruby/setup-ruby@v1.328.0
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.3'
           bundler-cache: true
           cache-version: 0
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@v6.0.0
       - name: Build with Jekyll
         # Outputs to the './_site' directory by default

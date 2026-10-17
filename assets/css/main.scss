@@ -36,3 +36,21 @@
     "layout/archive",
     "layout/sidebar"
 ;
+
+/* Keep profile links available at every width without a Follow toggle. */
+.author__urls--visible {
+  display: block;
+  position: relative;
+  right: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  z-index: auto;
+
+  &:before,
+  &:after {
+    display: none;
+  }
+}
