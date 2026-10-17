@@ -54,3 +54,50 @@
     display: none;
   }
 }
+
+
+/* Keep every section visible, wrapping rather than hiding menu links. */
+.expanded-nav {
+  .visible-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    gap: 0.3rem 1.25rem;
+
+    li {
+      display: block;
+    }
+
+    a {
+      margin: 0;
+      padding: 0.4rem 0;
+      font-size: 0.85rem;
+    }
+
+    .masthead__menu-item--lg {
+      margin-right: auto;
+      padding-right: 0;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .visible-links {
+      gap: 0.2rem 1rem;
+    }
+
+    .masthead__menu-item {
+      order: 2;
+    }
+
+    .masthead__menu-item--lg {
+      order: 0;
+      flex-basis: calc(100% - 3rem);
+    }
+
+    #theme-toggle {
+      order: 1;
+      margin-left: auto;
+    }
+  }
+}
