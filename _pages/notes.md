@@ -7,10 +7,14 @@ hide_title: true
 
 ## machine learning
 
-i’m collecting my machine learning notes in a topic-based notebook, from foundations and model training to supervised learning, clustering, and dimensionality reduction. the structure is ready, and i’ll fill in the notes as i go.
+notes from my undergraduate coursework, course projects, and independent study, covering foundations, model training, supervised learning, clustering, and dimensionality reduction.
 
 [browse my ml notes](https://nainikagupta02.github.io/ML-notes/)
 
 [source files on github](https://github.com/nainikagupta02/ML-notes)
 
-biostatistics notes will be added here in the future.
+## mlops
+
+notes from my master’s studies, learned through course projects and independent study.
+
+[browse my mlops notes]({{ '/notes/mlops/' | relative_url }})

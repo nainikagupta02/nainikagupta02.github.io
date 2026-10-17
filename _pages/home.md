@@ -12,7 +12,7 @@ My work spans cancer research, environmental epidemiology, and mechanistic model
 
 I’d love to connect! Find me on [LinkedIn](https://www.linkedin.com/in/nainikagupta02/) or reach out by [email](mailto:nainika@uchicago.edu).
 
-Here I’ve documented my professional [experience]({{ '/experience/' | relative_url }}), some [projects]({{ '/projects/' | relative_url }}) I’ve worked on, and what I’ve been doing [beyond research]({{ '/beyond-research/' | relative_url }}). I’m also putting together [notes on machine learning and biostatistics]({{ '/notes/' | relative_url }}) to share here.
+Here I’ve documented my professional [experience]({{ '/experience/' | relative_url }}), some [projects]({{ '/projects/' | relative_url }}) I’ve worked on, and what I’ve been doing [beyond research]({{ '/beyond-research/' | relative_url }}). I’m also sharing [notes on ml and mlops]({{ '/notes/' | relative_url }}).
 
 ## Tools I work with
 
