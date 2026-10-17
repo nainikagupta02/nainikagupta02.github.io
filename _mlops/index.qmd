@@ -4,11 +4,7 @@ subtitle: "a notebook by nainika gupta"
 toc: false
 ---
 
-feb 2025 – dec 2025
-
-notes from my master’s studies, organised around the lifecycle of production ml systems.
-
-these notes grew out of things i had to learn as i took on more work, from keeping experiments reproducible to understanding how models are deployed and maintained. the topics reflect that progression, with new ideas added as i needed them.
+notes i made starting at the end of undergrad and moving into my master’s, organised around the lifecycle of production ml systems. these notes grew out of things i had to learn as i took on more work, from keeping experiments reproducible to understanding how models are deployed and maintained. the topics reflect that progression, with new ideas added as i needed them.
 
 ::: {.topic-grid}
 
