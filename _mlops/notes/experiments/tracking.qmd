@@ -5,7 +5,10 @@ title: "experiment tracking"
 ## what is a run?
 
 - a run is one execution with a particular dataset, configuration, and environment
-- tracking connects the choices you made to the outputs they produced
+- an experiment groups related runs, such as several models evaluated on the same task; tracking connects the choices you made to their outputs
+- a metric is a numeric assessment such as validation roc auc; a tag is a descriptive key–value label, such as the dataset version
+- metadata describes a run or artifact, such as its author, dataset version, or creation time; use it to identify and interpret saved outputs
+- logs record execution messages and events; use them to diagnose failures alongside the saved artifacts
 - keep failed runs too, with their status and logs, so failures can be investigated
 
 ::: {.table-responsive tabindex="0"}
@@ -30,9 +33,12 @@ title: "experiment tracking"
 
 ## add mlflow to the lifecycle example
 
+- mlflow is an experiment-tracking and model-management platform; use it to compare runs and retrieve their metrics and artifacts
+- sqlite is an embedded relational database stored in a local file; this example uses it for tracking metadata
+- a uri identifies a resource or storage location; `sqlite:///mlflow.db` tells mlflow to use the local database file
 - install `mlflow` in your project environment, then run this from the folder containing `artifacts/run-001`
 - it records the results already produced by the [lifecycle example](../foundations/lifecycle.qmd), without inventing new scores
-- mlflow organises runs and logs parameters, metrics, tags, and artifacts [tracking guide](https://mlflow.org/docs/latest/ml/tracking/)
+- parameters record run settings, metrics record numeric results, tags label the run, and artifacts preserve files [tracking guide](https://mlflow.org/docs/latest/ml/tracking/)
 
 ```python
 import json
@@ -55,7 +61,8 @@ with mlflow.start_run():
 
 ## connect research workflow records
 
-- nextflow reports and task traces capture execution details; attach them to the corresponding experiment [nextflow reports](https://docs.seqera.io/nextflow/reports)
+- nextflow is a workflow engine that connects tasks and manages their execution; use it for multi-step workflows such as sequencing analysis
+- a task trace records task-level details such as status, resources, and runtime; attach traces and execution reports to the corresponding experiment [nextflow reports](https://docs.seqera.io/nextflow/reports)
 - record the container digest and slurm job ids alongside the workflow run id
 - execution records explain how a pipeline ran; you still need task-specific metrics to judge its results
 

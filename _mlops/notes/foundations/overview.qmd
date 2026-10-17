@@ -4,7 +4,8 @@ title: "what is mlops?"
 
 ## the idea
 
-- mlops is the practice of developing, releasing, and operating ml systems reliably
+- mlops, short for machine learning operations, is the practice of developing, releasing, and operating ml systems reliably
+- a model is a learned mapping from inputs to predictions; deployment makes that model available in a working system, while serving runs it on new inputs
 - training produces a model; a usable system also needs repeatable data processing, evaluation, serving, and monitoring
 - software engineering supplies maintainable code and tests; devops supplies release and infrastructure practices; mlops extends these to changing data and learned models [aws overview](https://aws.amazon.com/what-is/mlops/)
 
@@ -23,7 +24,15 @@ title: "what is mlops?"
 :::
 
 - reproducibility means being able to trace and rerun an experiment; a seed alone does not capture its data or environment
-- a scikit-learn pipeline bundles preprocessing and the estimator, helping apply the same transformations at prediction time [pipeline documentation](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html)
+- scikit-learn is a python library for preprocessing, modelling, and evaluation; use its pipeline to bundle preprocessing with an estimator, the component that learns from data [pipeline documentation](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html)
+
+## a few working terms
+
+- dependencies are the libraries and software a program needs; record their versions to recreate its environment
+- an artifact is a saved output such as a fitted model or prediction file; keep it when another step needs the result
+- an orchestrator coordinates tasks and their dependencies; use one when several processing steps must run in a defined order
+- rollback restores a previous working version; plan it before releasing a replacement
+- monitoring observes system behaviour over time; drift means data distributions or input–outcome relationships have changed, which may require investigation
 
 ## three kinds of automation
 
@@ -37,7 +46,7 @@ title: "what is mlops?"
 - start with one dataset, one baseline, and a script that trains and evaluates a pipeline
 - record the dataset version, code commit, parameters, metrics, and dependencies with the saved model
 - add a reload-and-predict check; then automate checks when code changes
-- introduce registries, orchestrators, or feature stores when the workflow needs them
-- optional next step: replace local run records with experiment tracking; mlflow can record parameters, metrics, and model artifacts [mlflow quickstart](https://mlflow.org/docs/latest/ml/tracking/quickstart/)
+- introduce a [registry](../experiments/registry.qmd) to catalogue model versions, or a [feature store](../data-pipelines/versioning.qmd) to organise reusable features, when the workflow needs them
+- mlflow is an experiment-tracking and model-management tool; use it to organise runs, compare metrics, and retrieve saved artifacts [mlflow quickstart](https://mlflow.org/docs/latest/ml/tracking/quickstart/)
 
 [walk through the model lifecycle and runnable example](lifecycle.qmd).

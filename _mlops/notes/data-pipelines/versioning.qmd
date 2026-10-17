@@ -7,11 +7,14 @@ title: "data versioning & feature stores"
 - a dataset version should identify an exact snapshot, not just a filename such as `latest.csv`
 - record the source snapshot, extraction query, transformation code, schema, and split rules
 - connect each model run to its input version and configuration
-- a checksum detects changed bytes; you still need the original data to reproduce a run
+- a hash function maps content to a compact fingerprint; a checksum is a value used to detect changes, and a cryptographic hash such as sha-256 can serve this purpose
+- use the fingerprint to check whether file contents changed; it does not preserve the original data or prove its quality
 
 ## use git and dvc together
 
-- git tracks code and lightweight metadata; dvc tracks data through pointer files backed by its cache [dvc add](https://doc.dvc.org/command-reference/add)
+- git is a version-control system; a commit identifies a recorded project state, useful for connecting a run to its code
+- dvc, short for data version control, tracks datasets and artifacts using small pointer files; use it when large inputs need versions alongside git-managed code
+- a pointer file stores references and metadata rather than the dataset itself; dvc’s cache retains tracked content for reuse and recovery [dvc add](https://doc.dvc.org/command-reference/add)
 - with dvc installed, run this inside an existing git repository containing `data/clean.csv`
 
 ```bash
@@ -22,7 +25,8 @@ git commit -m "track initial dataset snapshot"
 ```
 
 - after changing the dataset, rerun `dvc add` and commit the updated pointer
-- configure a dvc remote and use `dvc push` to share or back up data; pushing git commits alone does not upload the dataset [dvc push](https://doc.dvc.org/command-reference/push)
+- a dvc remote is configured storage for tracked data, such as an object-storage bucket; use `dvc push` to share or back up the content
+- pushing git commits alone does not upload the dataset [dvc push](https://doc.dvc.org/command-reference/push)
 
 ## where feature stores fit
 
@@ -36,7 +40,10 @@ git commit -m "track initial dataset snapshot"
 
 :::
 
-- a feature store can support historical training retrieval and low-latency feature lookup; it is optional for a small local workflow [feast overview](https://docs.feast.dev/)
+- feast is an open-source feature-store framework; use it to define reusable features and retrieve historical training values or online serving values
+- an entity is the object a feature describes, such as a sample or account; its key identifies which object to retrieve
+- event time is when an event happened, while arrival time is when the system received it; use both when reasoning about which features were available at prediction time
+- a feature store is optional for a small local workflow [feast overview](https://docs.feast.dev/)
 - define an entity key, event time, feature meaning, and freshness requirement
 - for a prediction made at time `t`, retrieve only values available by `t`; a later correction must not leak into historical training examples [point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)
 - begin with versioned files and shared transformation code; consider a feature store when several workflows need consistent, reusable features

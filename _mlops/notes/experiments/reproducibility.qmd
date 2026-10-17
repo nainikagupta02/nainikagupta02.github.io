@@ -8,19 +8,31 @@ title: "code, data & environment versioning"
 - record seeds and hardware; exact numerical agreement can still depend on libraries, parallelism, and algorithms
 - define what counts as agreement: identical files, matching predictions within a tolerance, or comparable evaluation results
 
+## environment vocabulary
+
+- a container image is a packaged filesystem and configuration used to create containers; a container is an instance of that image, useful for running a tool with its dependencies [docker image basics](https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/)
+- an image tag is a human-readable label that can be reassigned; a digest is a content-based identifier used to select an exact image
+- a container runtime is software that creates and runs containers; apptainer is a runtime designed for scientific and hpc workflows
+- hpc means high-performance computing, often a shared cluster; a scheduler allocates resources among submitted jobs
+- an executor is the nextflow component that launches tasks through a chosen execution system; a profile is a named group of settings used to switch environments
+
 ## nextflow, docker & slurm
 
 ::: {.table-responsive tabindex="0"}
 
-| tool | role | record with the run |
+| tool | what it is | when to use it |
 |---|---|---|
-| nextflow | connect processes and manage task execution | pipeline revision, parameters, nextflow version, reports |
-| docker | package software and dependencies in an image | image digest and build inputs |
-| slurm | schedule jobs and allocate cluster resources | job ids, requested resources, logs |
+| nextflow | a workflow engine for connected processes | coordinate sequencing quality checks, alignment, and quantification steps |
+| docker | a platform for building and running containers | package a tool and its dependencies for a repeatable environment |
+| slurm | a cluster workload manager and job scheduler | queue analyses and request cpu, memory, and time allocations |
 
 :::
 
-- in a bioinformatics workflow, also version the reference genome, annotation, sample sheet, and tool settings
+- retain the nextflow version and reports, docker image digest and build inputs, and slurm job ids and logs with the run [slurm overview](https://slurm.schedmd.com/overview.html)
+- a reference genome is an assembly used as a coordinate and sequence reference, for example during alignment
+- an annotation describes features such as genes and exons; use a version compatible with the reference when quantifying expression
+- a sample sheet maps sample identifiers to files and metadata; use it to keep inputs correctly associated with samples
+- version these files and tool settings together
 - changing a reference file can change results even when the workflow code is unchanged
 
 ## a small nextflow configuration
@@ -54,7 +66,8 @@ nextflow run main.nf -profile local_docker -with-report report.html -with-trace 
 nextflow run main.nf -profile local_docker -resume
 ```
 
-- resume needs the task cache and corresponding work outputs; it is a recovery feature, not an independent rerun from scratch [cache and resume](https://docs.seqera.io/nextflow/cache-and-resume)
+- a task cache stores metadata used to recognise reusable work; resume reuses eligible completed tasks so an interrupted workflow need not start over
+- resume needs both the cache and corresponding work outputs; it is a recovery feature rather than an independent rerun from scratch [cache and resume](https://docs.seqera.io/nextflow/cache-and-resume)
 - pin container images by digest for an exact image version; tags can change, and image pinning alone does not fix input data or hardware differences [docker image pinning](https://docs.docker.com/build/building/best-practices/)
 
 ## check reproducibility
@@ -62,6 +75,6 @@ nextflow run main.nf -profile local_docker -resume
 - rerun a small fixed dataset in a fresh output location
 - compare outputs or metrics using a tolerance appropriate to the task
 - investigate differences in code, inputs, configuration, references, and environment before attributing them to randomness
-- keep a compact run manifest linking these records to the [dataset version](../data-pipelines/versioning.qmd)
+- a run manifest is a structured record of inputs, settings, environment, and output locations; use it to link a result to the [dataset version](../data-pipelines/versioning.qmd)
 
 next: [model registries & lineage](registry.qmd)

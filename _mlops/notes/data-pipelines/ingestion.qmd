@@ -8,6 +8,14 @@ title: "data ingestion & preparation"
 - ingestion brings data from files, databases, or apis into a workflow; preparation makes it usable for the task
 - keep raw inputs unchanged so you can inspect or rebuild a processed dataset
 
+## input vocabulary
+
+- an api is a defined interface for requesting data or invoking software; use one when a source exposes records through a service
+- a raw snapshot is a preserved copy of inputs at a particular point; use it to rebuild outputs or investigate errors
+- a schema specifies fields and their types; use it to detect a renamed column or an unexpected string in a numeric field
+- a key identifies a logical record; use it to distinguish duplicate events from legitimate repeated observations
+- batch processing handles a collection periodically; streaming handles arriving events, useful when updates need low latency
+
 ## decide before loading
 
 - define what one row represents and the key that identifies it
@@ -17,7 +25,9 @@ title: "data ingestion & preparation"
 
 ## a tiny ingestion example
 
-- this self-contained example uses synthetic records and explicit parsing
+- pandas is a python library for labelled tabular data; use it here to load columns and convert their types
+- csv is a text format with comma-separated fields; `StringIO` makes an in-memory text stream so the example can read csv without a separate file
+- parsing converts a stored representation into a usable value, such as a timestamp string into a date-time object
 - `dtype` preserves identifiers such as `001`; invalid numeric values or timestamps stop the run rather than silently becoming missing values [pandas csv parsing](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html), [numeric conversion](https://pandas.pydata.org/docs/reference/api/pandas.to_numeric.html)
 
 ```python
@@ -38,9 +48,12 @@ if df["record_id"].isna().any() or df["record_id"].duplicated().any():
 ## make reruns safe
 
 - design idempotent writes: processing the same input again should not create duplicate logical records
-- use a stable key with an upsert, or replace a specific output partition after validation
-- for incremental loads, save a checkpoint only after the output succeeds; plan how to handle late arrivals and corrected records
+- an upsert inserts a new key or updates an existing one; use it when a repeated load contains corrected records [insert and conflict handling](https://www.postgresql.org/docs/current/sql-insert.html)
+- a partition is a subset stored separately, such as one day’s records; replace the affected partition when rebuilding that day
+- an incremental load processes changes since the previous load; a checkpoint records progress, such as the last successfully processed event id
+- save a checkpoint only after the output succeeds; plan how to handle late arrivals and corrected records
 - record input/output row counts and rejected rows, and publish outputs only after checks pass
-- learn imputation, scaling, or feature selection from training data after splitting; do not fit them during a whole-dataset cleaning pass [leakage guidance](https://scikit-learn.org/stable/common_pitfalls.html)
+- imputation fills missing values, scaling adjusts feature magnitudes, and feature selection chooses predictors; use them when the model needs those transformations
+- learn these transformations from training data after splitting; do not fit them during a whole-dataset cleaning pass [leakage guidance](https://scikit-learn.org/stable/common_pitfalls.html)
 
 next: [validation & leakage prevention](validation.qmd)

@@ -15,7 +15,8 @@ title: "model registries & lineage"
 |---|---|
 | registered model | `demo-classifier` |
 | version | one particular registered artifact |
-| alias | `candidate` points to a selected version |
+| alias | a mutable name such as `candidate` pointing to a selected version |
+| model signature | the expected input/output structure and optional parameters, used to validate a model’s interface |
 | lineage | artifact → training run → code and data versions |
 
 :::
@@ -42,14 +43,15 @@ client.set_registered_model_alias("demo-classifier", "candidate", version.versio
 ```
 
 - record the original run id, dataset version, and code revision on this new run so the lineage remains connected
-- for a real release, also record the input signature, evaluation report, limitations, and intended use
+- for a real release, record a model signature, including input names, types, and shapes where relevant; use it to check that inference requests match the expected interface [model signatures](https://mlflow.org/docs/latest/ml/model/signatures/)
+- keep the evaluation report, limitations, and intended use with the version
 - an alias is mutable; record the resolved version for each deployment rather than relying on the alias name alone [model aliases](https://mlflow.org/docs/latest/ml/model-registry/)
 
 ## promote deliberately
 
 - review performance against a baseline, error patterns, relevant subgroups, and inference compatibility
 - link the approval decision and responsible owner to the version
-- retain the previous version and its environment so rollback is possible
+- retain the previous version and its environment so rollback, restoring the earlier working release, is possible
 - in a bioinformatics workflow, preserve versioned output artifacts and their workflow lineage even when there is no trained model to register
 
 next: [packaging & serving](../packaging-serving/index.qmd)

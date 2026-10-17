@@ -6,7 +6,9 @@ title: "validation & leakage prevention"
 
 - **data validation:** check whether inputs meet the expected contract
 - **model validation:** assess whether a candidate performs well enough for its intended use
-- a table can pass every schema check and still contain leaked information
+- a data contract is the agreed schema and quality rules a producer must satisfy; use it to decide whether a batch can proceed
+- leakage occurs when training or evaluation uses information unavailable at the intended prediction time; a table can pass every schema check and still leak information
+- quarantine means isolating invalid records for investigation so they do not silently enter downstream steps
 
 ::: {.table-responsive tabindex="0"}
 
@@ -42,19 +44,21 @@ if not df["target"].isin([0, 1]).all():
 
 - limits must come from the task, not a universal rule; the amount range above is only an example
 - use exceptions for required runtime checks; python assertions can be disabled
-- larger validation suites can express checks as reusable expectations and record their results [great expectations](https://docs.greatexpectations.io/docs/core/define_expectations/)
+- great expectations is a data-validation framework; an expectation is a declarative rule such as “record ids must be unique”, useful when checks need reusable definitions and recorded results [great expectations](https://docs.greatexpectations.io/docs/core/define_expectations/)
 
 ## prevent leakage
 
 - define the prediction time; exclude features only available after that time
 - fit imputation, scaling, and feature selection on training folds only
 - split by entity when evaluating generalisation to unseen people or accounts; use time-aware splits for future prediction
-- use point-in-time joins so historical features reflect what was available then, including arrival delays [point-in-time retrieval](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)
+- a point-in-time join matches each prediction time to feature values available then; use it to build historical training rows without pulling in future information, including arrival delays [point-in-time retrieval](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)
 - pipelines help with preprocessing leakage, but cannot repair an inappropriate split or a leaked target [scikit-learn pitfalls](https://scikit-learn.org/stable/common_pitfalls.html)
 
 ## group split plus preprocessing
 
-- given a larger labelled `df` with repeated `entity_id` values, this holds out whole entities for validation [group split documentation](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupShuffleSplit.html)
+- `GroupShuffleSplit` is a scikit-learn splitter that assigns entire groups to different subsets; use it to evaluate on unseen entities
+- `SimpleImputer` fills missing values using a fitted rule, while `StandardScaler` centres and scales features using fitted means and standard deviations
+- given a larger labelled `df` with repeated `entity_id` values, this example holds out whole entities for validation [group split documentation](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupShuffleSplit.html)
 
 ```python
 from sklearn.impute import SimpleImputer
@@ -72,7 +76,7 @@ pipeline.fit(df.iloc[train][["amount"]], df.iloc[train]["target"])
 probabilities = pipeline.predict_proba(df.iloc[val][["amount"]])[:, 1]
 ```
 
-- check class coverage in each split; group splitting does not guarantee stratification
+- stratification aims to preserve class proportions across splits; group splitting does not guarantee it, so check that each split contains the required classes
 - keep a separate final test set before model selection; this snippet only demonstrates a training/validation split
 
 next: [data versioning & feature stores](versioning.qmd)

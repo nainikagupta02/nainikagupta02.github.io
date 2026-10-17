@@ -21,6 +21,25 @@ title: "the model lifecycle"
 
 :::
 
+## terms used in this example
+
+::: {.table-responsive tabindex="0"}
+
+| term | meaning and use |
+|---|---|
+| feature / target | an input predictor / the outcome to predict, such as transaction amount / an outcome label |
+| inference | applying a fitted model to new inputs to obtain predictions |
+| baseline | a simple reference method used to check whether a more complex model adds value |
+| parameter / hyperparameter | a value learned during fitting / a setting chosen outside fitting, such as a coefficient / regularisation strength |
+| seed | an initial value controlling a pseudo-random sequence, used to make a random split repeatable under the same conditions |
+| fold | one subset in cross-validation, where data subsets take turns serving as validation data |
+| threshold | a cutoff that turns a score into a decision, such as predicting class 1 above a chosen probability |
+
+:::
+
+- logistic regression is a classification model that converts a weighted combination of features into class probabilities; use it as a simple tabular-data candidate
+- binary roc auc, the area under the receiver operating characteristic curve, measures how well scores rank positives above negatives; 0.5 indicates no ranking discrimination and 1 indicates perfect ranking on the evaluated data [metric definitions](https://scikit-learn.org/stable/modules/model_evaluation.html#roc-metrics)
+
 ## keep evaluation honest
 
 - **training:** learn preprocessing and model parameters
@@ -28,6 +47,25 @@ title: "the model lifecycle"
 - **test:** estimate final performance after those choices are fixed; repeatedly tuning to it turns it into validation data
 - fit transformations within training folds. a pipeline helps prevent preprocessing leakage, but cannot fix a leaked target or an inappropriate split [scikit-learn pitfalls](https://scikit-learn.org/stable/common_pitfalls.html)
 - random row splits suit the independent synthetic example below; use group or time-aware splits when observations share entities or deployment predicts the future [model selection guide](https://scikit-learn.org/stable/model_selection.html)
+
+## tools in the local example
+
+::: {.table-responsive tabindex="0"}
+
+| tool / format | what it is | use here |
+|---|---|---|
+| python | a programming language | run the training script |
+| venv / pip | python’s environment-isolation module / package installer | isolate and install project dependencies |
+| scikit-learn | a machine learning library | generate data, split it, fit a pipeline, and evaluate it |
+| numpy | an array-computing library | handle numeric data and compare predictions |
+| joblib | a python object-persistence library | save and reload the fitted pipeline |
+| json | a text format for structured data | save metrics and settings in a readable run record |
+
+:::
+
+- serialisation converts an object into a storable representation; deserialisation reconstructs it, as `joblib.dump` and `joblib.load` do here
+- a dependency lock file records resolved package versions; `pip freeze` creates a version snapshot, which still needs a compatible python version and platform
+- a smoke test is a quick check that a workflow can execute; the reload-and-predict check catches broken artifact loading
 
 ## try it locally
 
