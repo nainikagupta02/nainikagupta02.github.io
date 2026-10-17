@@ -2,12 +2,51 @@
 title: "feedback, retraining & validation"
 ---
 
-[outline]{.note-status}
+## connect predictions to outcomes
 
-## topics
+- feedback is information about what happened after prediction, including observed targets and operational issues
+- delayed labels are outcomes available after some waiting period; label maturity means enough time has elapsed to observe the defined outcome
+- label coverage is the fraction of eligible predictions with available labels; low or selective coverage can bias measured performance
+- join predictions and outcomes by a stable identifier, preserving prediction time, outcome horizon, label availability time, and model version [model-quality workflow](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-model-quality.html)
 
-- collecting feedback and observed outcomes
-- deciding when to retrain
-- evaluating candidate models before redeployment
+## compare the same eligible rows
 
-notes will be added here as this section develops.
+- an incumbent is the current model; a candidate is a proposed replacement awaiting evaluation
+- a paired comparison evaluates both on the same observations so differences are not caused by different evaluation rows
+- the [synthetic exercise](../../examples/monitoring-demo.zip) simulates fixed scores for both models and outcomes available three days after prediction, with an evaluation cutoff at day seven
+- it does not fit models; candidate training belongs in the separate [training workflow](../automation/orchestration.qmd)
+
+```python
+mature = predictions[predictions["prediction_day"] <= cutoff_day - horizon_days]
+available = labels[labels["available_day"] <= cutoff_day]
+joined = mature.merge(available, on="request_id", how="left", validate="one_to_one")
+observed = joined.dropna(subset=["target"])
+coverage = len(observed) / len(mature) if len(mature) else 0.0
+```
+
+- the left join retains eligible predictions without outcomes, making missing-label coverage visible; `one_to_one` rejects duplicate join keys
+- the full helper checks coverage and sample size before comparing probabilities with scikit-learn’s evaluation functions
+
+::: {.table-responsive tabindex="0"}
+
+| metric | meaning | use |
+|---|---|---|
+| binary roc auc | discrimination based on ranking positives above negatives | compare score ranking on the same labelled rows |
+| binary brier loss | mean squared difference between probability and binary outcome | assess probability prediction error, with lower values better |
+| calibration | agreement between predicted probabilities and observed frequencies | investigate whether predicted risks match outcome rates |
+
+:::
+
+- brier loss reflects several aspects of probability quality and is not a standalone measure of calibration [brier definition](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.brier_score_loss.html), [roc auc](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html)
+- the toy rule requires at least 30 labels, 90% coverage, lower candidate brier loss, and no lower auc, then marks the candidate for review
+- these example cutoffs do not establish statistical confidence or production suitability; inspect uncertainty, subgroup results, and error consequences before approval
+
+## decide whether to retrain
+
+- start with the cause: stale inputs, broken feature code, delayed labels, and genuine population changes need different responses
+- retraining fits a new model using an updated, versioned training dataset; recalibration adjusts probability estimates and also requires appropriate validation
+- use training and validation data for fitting and selection, then evaluate the frozen candidate on an appropriately separated final cohort
+- preserve the incumbent and its environment, apply the required review, and follow the [release and rollback plan](../deployment/releases.qmd)
+- record data versions, code, metrics, decisions, and owners; continue monitoring after release [continuous-training guidance](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+
+next: [governance & security](../governance/index.qmd)

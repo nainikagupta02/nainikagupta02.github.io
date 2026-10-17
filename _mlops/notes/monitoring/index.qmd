@@ -3,7 +3,7 @@ title: "monitoring & retraining"
 toc: false
 ---
 
-observing production systems and responding to change.
+monitor service and model behaviour, investigate drift, and evaluate candidates once outcomes become available
 
 ::: {.topic-index}
 

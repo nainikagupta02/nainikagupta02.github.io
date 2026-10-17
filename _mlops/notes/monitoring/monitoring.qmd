@@ -2,12 +2,61 @@
 title: "system & model monitoring"
 ---
 
-[outline]{.note-status}
+## monitor several layers
 
-## topics
+- monitoring collects measurements over time to identify failures or changes that need investigation
+- a window is the interval being summarised, such as the last hour; a cohort is a selected group of observations
 
-- service health, latency, and errors
-- prediction quality when outcomes become available
-- logging, dashboards, and actionable alerts
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| layer | what it describes | useful signals |
+|---|---|---|
+| system | whether the service operates as intended | latency, errors, request volume, resource use |
+| data | whether inputs meet expectations | schema failures, missingness, freshness, distribution changes |
+| predictions | what the model outputs | score distributions, predicted class proportions, model ids |
+| outcomes | how predictions compare with observed targets | classification or regression metrics on labelled cohorts |
+
+:::
+
+- input and prediction changes are observable before labels arrive; measuring model quality requires suitable observed outcomes [data monitoring](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-data-quality.html), [model monitoring](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-model-quality.html)
+
+## tools and definitions
+
+- prometheus collects numeric time series, measurements associated with timestamps and tags; use it for service metrics and alert rules [prometheus overview](https://prometheus.io/docs/introduction/overview/)
+- grafana queries data sources and presents dashboards and alerts; use it to inspect trends across service and model metrics [grafana introduction](https://grafana.com/docs/grafana/latest/introduction/)
+- instrumentation adds measurements to code; scraping means periodically retrieving exposed metrics
+- a counter accumulates events, such as request counts, while a histogram records counts across configured value ranges, useful for latency distributions
+- a dashboard displays measurements; an alert signals a condition requiring action, with an owner and response procedure
+
+## a small instrumentation example
+
+- the [monitoring exercise](../../examples/monitoring-demo.zip) includes `instrumentation.py`, using the prometheus python client
+
+```python
+registry = CollectorRegistry()
+requests = Counter("prediction_requests_total", "prediction requests",
+                   ["status_class"], registry=registry)
+latency = Histogram("prediction_latency_seconds", "prediction latency", registry=registry)
+requests.labels(status_class="2xx").inc()
+latency.observe(0.03)
+```
+
+- `CollectorRegistry` groups metrics; `inc` adds an event and `observe` records a measurement [counters](https://prometheus.github.io/client_python/instrumenting/counter/), [histograms](https://prometheus.github.io/client_python/instrumenting/histogram/)
+- this records one illustrative request; a real service updates metrics in the request path and exposes them for scraping
+- monitoring labels are tags such as status class; ground-truth labels are observed prediction targets
+- keep metric tags low in cardinality, meaning few distinct values; request ids create too many time series and belong in appropriately controlled logs instead [instrumentation guidance](https://prometheus.io/docs/practices/instrumentation/)
+
+## inspect a synthetic window
+
+```bash
+python -m pip install -r requirements.in
+python demo.py --output monitoring-output
+```
+
+- the download generates synthetic logs, features, scores, and delayed labels without requiring a deployed service
+- `report.json` contains request counts, server/client error fractions, and p95 across all logged requests, including errors
+- log aggregation uses pandas, a tabular-data library; numpy supplies numeric operations used by the exercise
+- define denominators, latency populations, minimum sample sizes, and observation windows before setting alerts
+- a runbook is a short response procedure; link it to an alert so the owner knows what to inspect and when to escalate
+
+next: [data drift & concept drift](drift.qmd)

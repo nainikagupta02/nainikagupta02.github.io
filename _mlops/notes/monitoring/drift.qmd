@@ -2,12 +2,49 @@
 title: "data drift & concept drift"
 ---
 
-[outline]{.note-status}
+## distinguish the signals
 
-## topics
+::: {.table-responsive tabindex="0"}
 
-- changes in input distributions
-- changes in the relationship between inputs and outcomes
-- investigating drift alongside model performance
+| term | definition | example |
+|---|---|---|
+| data drift | a change in the input distribution, $p(x)$ | a different mix of input feature values |
+| prediction drift | a change in the model’s output distribution | more high predicted probabilities |
+| target distribution change | a change in observed outcome frequencies, $p(y)$ | a positive class becomes more common |
+| concept drift | a change in the outcome relationship conditional on inputs, $p(y\mid x)$ | the same inputs become associated with different outcomes |
 
-notes will be added here as this section develops.
+:::
+
+- these signals can occur together; input drift alone does not establish concept drift or a loss of predictive quality [drift definitions](https://www.evidentlyai.com/ml-in-production/concept-drift)
+- investigate schema, units, feature-generation code, reference files, and label definitions before deciding that the underlying process changed
+
+## compare a reference and a current window
+
+- a reference is a versioned baseline distribution; the current window contains the newer observations being compared
+- compare compatible populations and periods, accounting for seasonality and repeated entities
+- check missingness and invalid values separately rather than hiding them inside a distribution test
+- scipy is a scientific-computing library; its two-sample kolmogorov–smirnov test compares numeric sample distributions
+- the ks statistic is the largest gap between empirical cumulative distributions, the fractions of observations at or below each value [ks documentation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html)
+
+```python
+reference = pd.read_csv("monitoring-output/reference.csv")["feature"]
+current = pd.read_csv("monitoring-output/current.csv")["feature"]
+result = ks_2samp(reference.dropna(), current.dropna())
+print({"ks_statistic": float(result.statistic), "pvalue": float(result.pvalue),
+       "current_missing_fraction": float(current.isna().mean())})
+```
+
+- import pandas as `pd` and `ks_2samp` from `scipy.stats`; the [download](../../examples/monitoring-demo.zip) includes a checked helper in `drift_metrics.py`
+- a p-value describes how surprising the statistic is under the null hypothesis that the two distributions are the same, assuming the test’s conditions hold; it is not the probability that the model is failing
+- a small p-value can accompany a tiny change in a large sample; inspect the statistic, feature meaning, and downstream impact too
+- ks p-values assume independent samples from continuous distributions; tied counts, categorical data, and dependent observations need an appropriate method or calibration
+- testing many features increases false-alert risk; account for multiple comparisons rather than treating every p-value independently, and require practical impact before escalation
+
+## turn a flag into an investigation
+
+- evidently is a library for data/model evaluation and monitoring reports; use it when many features and quality checks need a common reporting workflow [metric catalogue](https://docs.evidentlyai.com/metrics/all_metrics)
+- the exercise flags a ks statistic above 0.15 for review and reports missingness separately; this is a toy effect threshold, not a universal drift rule
+- identify affected features and groups, inspect pipeline changes, and compare model quality when labels mature
+- a drift flag can lead to a pipeline fix, more investigation, or retraining; it does not automatically approve a replacement
+
+next: [feedback, retraining & validation](retraining.qmd)
