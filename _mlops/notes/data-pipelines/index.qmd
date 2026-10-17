@@ -3,7 +3,7 @@ title: "data pipelines & validation"
 toc: false
 ---
 
-reliable data and features for training and serving.
+learn how to ingest data, validate it, prevent leakage, and track the inputs behind a model run
 
 ::: {.topic-index}
 

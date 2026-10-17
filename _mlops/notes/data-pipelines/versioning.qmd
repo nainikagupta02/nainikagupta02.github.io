@@ -2,12 +2,47 @@
 title: "data versioning & feature stores"
 ---
 
-[outline]{.note-status}
+## what needs a version?
 
-## topics
+- a dataset version should identify an exact snapshot, not just a filename such as `latest.csv`
+- record the source snapshot, extraction query, transformation code, schema, and split rules
+- connect each model run to its input version and configuration
+- a checksum detects changed bytes; you still need the original data to reproduce a run
 
-- dataset snapshots and version control
-- feature definitions and reuse
-- feature stores and when they are useful
+## use git and dvc together
 
-notes will be added here as this section develops.
+- git tracks code and lightweight metadata; dvc tracks data through pointer files backed by its cache [dvc add](https://doc.dvc.org/command-reference/add)
+- with dvc installed, run this inside an existing git repository containing `data/clean.csv`
+
+```bash
+dvc init
+dvc add data/clean.csv
+git add .dvc .dvcignore data/clean.csv.dvc data/.gitignore
+git commit -m "track initial dataset snapshot"
+```
+
+- after changing the dataset, rerun `dvc add` and commit the updated pointer
+- configure a dvc remote and use `dvc push` to share or back up data; pushing git commits alone does not upload the dataset [dvc push](https://doc.dvc.org/command-reference/push)
+
+## where feature stores fit
+
+::: {.table-responsive tabindex="0"}
+
+| component | main job |
+|---|---|
+| dataset versioning | identify and recover a particular dataset snapshot |
+| feature store | organise feature definitions and retrieve values for training or serving |
+| model registry | organise model artifacts, versions, and metadata |
+
+:::
+
+- a feature store can support historical training retrieval and low-latency feature lookup; it is optional for a small local workflow [feast overview](https://docs.feast.dev/)
+- define an entity key, event time, feature meaning, and freshness requirement
+- for a prediction made at time `t`, retrieve only values available by `t`; a later correction must not leak into historical training examples [point-in-time joins](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)
+- begin with versioned files and shared transformation code; consider a feature store when several workflows need consistent, reusable features
+
+## try it
+
+- save a small synthetic csv, track it, change one value, and track the update
+- compare the two pointer versions in git and confirm you can recover the earlier data
+- record the dataset version beside the metrics from the [lifecycle example](../foundations/lifecycle.qmd)

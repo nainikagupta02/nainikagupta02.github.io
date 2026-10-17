@@ -2,12 +2,45 @@
 title: "data ingestion & preparation"
 ---
 
-[outline]{.note-status}
+## the pipeline
 
-## topics
+- source → raw snapshot → validate → transform → versioned output
+- ingestion brings data from files, databases, or apis into a workflow; preparation makes it usable for the task
+- keep raw inputs unchanged so you can inspect or rebuild a processed dataset
 
-- data sources, ingestion, and storage
-- cleaning, labelling, and transformations
-- repeatable pipelines and handling failed runs
+## decide before loading
 
-notes will be added here as this section develops.
+- define what one row represents and the key that identifies it
+- specify expected columns, types, units, time zones, and missing-value rules
+- choose batch processing for periodic updates or streaming when events must be processed continuously
+- record the source, extraction time, query or filters, and data version
+
+## a tiny ingestion example
+
+- this self-contained example uses synthetic records and explicit parsing
+- `dtype` preserves identifiers such as `001`; invalid numeric values or timestamps stop the run rather than silently becoming missing values [pandas csv parsing](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html), [numeric conversion](https://pandas.pydata.org/docs/reference/api/pandas.to_numeric.html)
+
+```python
+from io import StringIO
+import pandas as pd
+
+raw = StringIO("""record_id,event_time,amount
+001,2025-02-01T10:00:00Z,12.5
+002,2025-02-02T11:00:00Z,8.0
+""")
+df = pd.read_csv(raw, dtype={"record_id": "string"})
+df["event_time"] = pd.to_datetime(df["event_time"], utc=True, errors="raise")
+df["amount"] = pd.to_numeric(df["amount"], errors="raise")
+if df["record_id"].isna().any() or df["record_id"].duplicated().any():
+    raise ValueError("missing or duplicate record ids")
+```
+
+## make reruns safe
+
+- design idempotent writes: processing the same input again should not create duplicate logical records
+- use a stable key with an upsert, or replace a specific output partition after validation
+- for incremental loads, save a checkpoint only after the output succeeds; plan how to handle late arrivals and corrected records
+- record input/output row counts and rejected rows, and publish outputs only after checks pass
+- learn imputation, scaling, or feature selection from training data after splitting; do not fit them during a whole-dataset cleaning pass [leakage guidance](https://scikit-learn.org/stable/common_pitfalls.html)
+
+next: [validation & leakage prevention](validation.qmd)

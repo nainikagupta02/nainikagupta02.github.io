@@ -4,9 +4,9 @@ title: "what is mlops?"
 
 ## the idea
 
-- mlops is the practice of developing, releasing, and operating ml systems reliably.
-- training produces a model; a usable system also needs repeatable data processing, evaluation, serving, and monitoring.
-- software engineering supplies maintainable code and tests; devops supplies release and infrastructure practices; mlops extends these to changing data and learned models. [aws overview](https://aws.amazon.com/what-is/mlops/)
+- mlops is the practice of developing, releasing, and operating ml systems reliably
+- training produces a model; a usable system also needs repeatable data processing, evaluation, serving, and monitoring
+- software engineering supplies maintainable code and tests; devops supplies release and infrastructure practices; mlops extends these to changing data and learned models [aws overview](https://aws.amazon.com/what-is/mlops/)
 
 ## why a good model is not enough
 
@@ -22,22 +22,22 @@ title: "what is mlops?"
 
 :::
 
-- reproducibility means being able to trace and rerun an experiment; a seed alone does not capture its data or environment.
-- a scikit-learn pipeline bundles preprocessing and the estimator, helping apply the same transformations at prediction time. [pipeline documentation](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html)
+- reproducibility means being able to trace and rerun an experiment; a seed alone does not capture its data or environment
+- a scikit-learn pipeline bundles preprocessing and the estimator, helping apply the same transformations at prediction time [pipeline documentation](https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html)
 
 ## three kinds of automation
 
-- **ci — continuous integration:** automatically check changes to code, data interfaces, and model behaviour.
-- **cd — continuous delivery/deployment:** prepare a validated release; continuous delivery can retain a manual approval, while continuous deployment automates release.
-- **ct — continuous training:** retrain on a trigger such as new data or a schedule, then validate the candidate before promotion.
-- google describes a progression from manual workflows, to automated ml pipelines, to ci/cd for those pipelines. [google’s mlops guide](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+- **ci: continuous integration:** automatically check changes to code, data interfaces, and model behaviour
+- **cd: continuous delivery/deployment:** prepare a validated release; continuous delivery can retain a manual approval, while continuous deployment automates release
+- **ct: continuous training:** retrain on a trigger such as new data or a schedule, then validate the candidate before promotion
+- google describes a progression from manual workflows, to automated ml pipelines, to ci/cd for those pipelines [google’s mlops guide](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
 
 ## implement the smallest useful version
 
-- start with one dataset, one baseline, and a script that trains and evaluates a pipeline.
-- record the dataset version, code commit, parameters, metrics, and dependencies with the saved model.
-- add a reload-and-predict check; then automate checks when code changes.
-- introduce registries, orchestrators, or feature stores when the workflow needs them.
-- optional next step: replace local run records with experiment tracking; mlflow can record parameters, metrics, and model artifacts. [mlflow quickstart](https://mlflow.org/docs/latest/ml/tracking/quickstart/)
+- start with one dataset, one baseline, and a script that trains and evaluates a pipeline
+- record the dataset version, code commit, parameters, metrics, and dependencies with the saved model
+- add a reload-and-predict check; then automate checks when code changes
+- introduce registries, orchestrators, or feature stores when the workflow needs them
+- optional next step: replace local run records with experiment tracking; mlflow can record parameters, metrics, and model artifacts [mlflow quickstart](https://mlflow.org/docs/latest/ml/tracking/quickstart/)
 
 [walk through the model lifecycle and runnable example](lifecycle.qmd).

@@ -2,12 +2,77 @@
 title: "validation & leakage prevention"
 ---
 
-[outline]{.note-status}
+## two meanings of validation
 
-## topics
+- **data validation:** check whether inputs meet the expected contract
+- **model validation:** assess whether a candidate performs well enough for its intended use
+- a table can pass every schema check and still contain leaked information
 
-- schema and data-quality checks
-- leakage and appropriate dataset splits
-- consistency between training and serving features
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| check | example | response |
+|---|---|---|
+| schema | required columns and numeric types | stop on incompatible inputs |
+| completeness | missing identifiers or excessive missing features | stop or quarantine according to the contract |
+| uniqueness | duplicate event keys | investigate; repeated entity ids may be legitimate |
+| validity | impossible dates or unexpected categories | reject or quarantine affected records |
+| freshness | a daily source has not updated | alert and investigate before using stale inputs |
+| distribution | a feature distribution changes | investigate context and impact |
+
+:::
+
+## start with explicit checks
+
+- suppose `df` is a labelled training table with `record_id`, `amount`, and binary `target`
+- this toy contract allows missing amounts for later imputation, but rejects invalid observed values and missing labels
+
+```python
+from pandas.api.types import is_numeric_dtype
+
+required = {"record_id", "amount", "target"}
+if not required.issubset(df.columns) or df.empty:
+    raise ValueError("missing columns or empty dataset")
+if df["record_id"].isna().any() or df["record_id"].duplicated().any():
+    raise ValueError("invalid record ids")
+if not is_numeric_dtype(df["amount"]) or not df["amount"].dropna().between(0, 1000).all():
+    raise ValueError("amount outside the toy contract")
+if not df["target"].isin([0, 1]).all():
+    raise ValueError("target must be 0 or 1")
+```
+
+- limits must come from the task, not a universal rule; the amount range above is only an example
+- use exceptions for required runtime checks; python assertions can be disabled
+- larger validation suites can express checks as reusable expectations and record their results [great expectations](https://docs.greatexpectations.io/docs/core/define_expectations/)
+
+## prevent leakage
+
+- define the prediction time; exclude features only available after that time
+- fit imputation, scaling, and feature selection on training folds only
+- split by entity when evaluating generalisation to unseen people or accounts; use time-aware splits for future prediction
+- use point-in-time joins so historical features reflect what was available then, including arrival delays [point-in-time retrieval](https://docs.feast.dev/getting-started/concepts/point-in-time-joins)
+- pipelines help with preprocessing leakage, but cannot repair an inappropriate split or a leaked target [scikit-learn pitfalls](https://scikit-learn.org/stable/common_pitfalls.html)
+
+## group split plus preprocessing
+
+- given a larger labelled `df` with repeated `entity_id` values, this holds out whole entities for validation [group split documentation](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupShuffleSplit.html)
+
+```python
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+train, val = next(splitter.split(df, groups=df["entity_id"]))
+pipeline = make_pipeline(
+    SimpleImputer(strategy="median"), StandardScaler(), LogisticRegression()
+)
+pipeline.fit(df.iloc[train][["amount"]], df.iloc[train]["target"])
+probabilities = pipeline.predict_proba(df.iloc[val][["amount"]])[:, 1]
+```
+
+- check class coverage in each split; group splitting does not guarantee stratification
+- keep a separate final test set before model selection; this snippet only demonstrates a training/validation split
+
+next: [data versioning & feature stores](versioning.qmd)
