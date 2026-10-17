@@ -1,14 +1,16 @@
 ---
 permalink: /notes/
-title: "Notes"
+title: "notes"
 author_profile: true
 hide_title: true
 ---
 
-## Machine learning
+## machine learning
 
-I’m collecting my machine learning notes in a dedicated GitHub repository, with explanations, mathematical intuition, and examples. I’ll add to it as I go.
+i’m collecting my machine learning notes in a topic-based notebook, from foundations and model training to supervised learning, clustering, and dimensionality reduction. the structure is ready, and i’ll fill in the notes as i go.
 
-[Browse my ML notes on GitHub](https://github.com/nainikagupta02/ML-notes)
+[browse my ml notes](https://nainikagupta02.github.io/ML-notes/)
 
-Biostatistics notes will be added here in the future.
+[source files on github](https://github.com/nainikagupta02/ML-notes)
+
+biostatistics notes will be added here in the future.
