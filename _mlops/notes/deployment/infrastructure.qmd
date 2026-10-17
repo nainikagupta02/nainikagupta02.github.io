@@ -2,12 +2,68 @@
 title: "cloud infrastructure & scaling"
 ---
 
-[outline]{.note-status}
+## what infrastructure supplies
 
-## topics
+::: {.table-responsive tabindex="0"}
 
-- compute, storage, and networking
-- infrastructure as code and environment management
-- resource allocation and scaling
+| component | definition | ml use case |
+|---|---|---|
+| compute | processors and memory used to run programs | train models or serve predictions |
+| virtual machine | a software-defined computer with its own operating environment | host an inference service |
+| gpu | a graphics processing unit, suited to highly parallel computation | accelerate suitable training or inference workloads |
+| object storage | storage accessed as named objects through an interface | retain datasets, model artifacts, and reports |
+| networking | connections and routing between systems | carry prediction requests and access inputs |
+| load balancer | a component distributing requests across service instances | spread traffic across replicas |
 
-notes will be added here as this section develops.
+:::
+
+- choose resources from measured workload needs, including model memory, data access, and response time
+- a managed endpoint is a provider-operated prediction service; use one when its operations and scaling features fit the workload
+
+## tools and scaling terms
+
+- infrastructure as code describes desired resources in versioned configuration; use it to review and repeat environment changes
+- terraform is an infrastructure-as-code tool that plans and applies resource changes through provider plugins, which connect it to a platform’s api [terraform introduction](https://developer.hashicorp.com/terraform/intro)
+- docker compose defines and runs services on an existing docker host; use it for a small local environment [compose model](https://docs.docker.com/compose/intro/compose-application-model/)
+- kubernetes coordinates containerised workloads across machines; a pod runs one or more related containers, while a deployment manages replicated pods and updates [deployment concepts](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- vertical scaling increases resources for one instance; horizontal scaling adds instances, or replicas
+- autoscaling adjusts replica counts or resources using configured signals; kubernetes’ horizontal pod autoscaler can adjust replica counts from observed metrics [autoscaling guide](https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/)
+
+## a local service configuration
+
+- [download the deployment exercise](../../examples/deployment-demo.zip), which includes the earlier synthetic model and serving code
+- prepare the model and image following the [packaging notes](../packaging-serving/containers.qmd), then use this `compose.yaml`
+
+```yaml
+services:
+  api:
+    image: ${DEMO_IMAGE:-mlops-demo:local}
+    ports:
+      - "127.0.0.1:${DEMO_PORT:-8000}:8000"
+    cpus: 1.0
+    mem_limit: 512m
+    restart: "on-failure:3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+```
+
+- `DEMO_IMAGE` and `DEMO_PORT` are environment variables selecting the image and host port, with defaults after `:-`
+- cpu and memory limits bound the container’s resources; these are example settings to measure and tune [resource limits](https://docs.docker.com/engine/containers/resource_constraints/)
+- a health check periodically tests service state; this one checks the readiness endpoint after startup
+- `on-failure:3` allows bounded restarts after unsuccessful process exits; an unhealthy check alone does not trigger this restart policy [restart behaviour](https://docs.docker.com/engine/containers/start-containers-automatically/)
+
+```bash
+docker compose config --quiet
+docker compose up -d --wait
+docker compose ps
+```
+
+- `config` validates the configuration; `up --wait` waits for services to run or become healthy where checks exist [compose up](https://docs.docker.com/reference/cli/docker/compose/up/)
+- one local container still depends on one host; replicas need independent failure capacity and suitable request routing
+- each worker process may load its own model copy, so budget memory as well as cpu before adding workers [fastapi deployment concepts](https://fastapi.tiangolo.com/deployment/concepts/)
+
+next: [staged releases & rollback](releases.qmd)

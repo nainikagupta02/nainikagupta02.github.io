@@ -2,12 +2,62 @@
 title: "latency, reliability & cost"
 ---
 
-[outline]{.note-status}
+## define the quantities first
 
-## topics
+::: {.table-responsive tabindex="0"}
 
-- latency, throughput, and resource use
-- availability and failure recovery
-- measuring cost against workload needs
+| quantity | definition | use |
+|---|---|---|
+| latency | elapsed time to complete a request | check whether users receive results promptly |
+| p50 / p95 | median latency / a latency at or below which about 95% of measured requests fall | inspect typical performance and the slower tail |
+| throughput | completed work per unit time | measure successful requests or records per second |
+| concurrency | work in progress at the same time | model simultaneous users or jobs |
+| availability | the fraction of valid requests or time meeting a defined service criterion | track whether the service is usable |
+| cold start | startup work before an instance is ready, including model loading | assess the first request or scaling delay |
+| sli / slo | service-level indicator, a measured service value / service-level objective, its target over a defined window | turn latency or success measurements into an operational goal |
 
-notes will be added here as this section develops.
+:::
+
+- define the request population, success criteria, and observation window before comparing reliability numbers [service-level objectives](https://sre.google/sre-book/service-level-objectives/)
+- service performance and predictive quality are separate measurements; a fast response can still be a poor prediction
+
+## a small timing exercise
+
+- start the prepared service from the [deployment exercise](../../examples/deployment-demo.zip), then run its benchmark
+
+```bash
+python benchmark.py --base-url http://127.0.0.1:8000 --requests 30 --warmup 3
+```
+
+- warmup sends initial requests before timing, useful for inspecting warmed-up behaviour; measure startup separately when it matters
+- the script sends one request at a time and reports successful p50/p95 latency, successes, failures, observed model ids, and successful throughput
+- it uses python’s `urllib.request` for http calls and `time.perf_counter` for elapsed timing; the central loop is
+
+```python
+before = time.perf_counter()
+model_id = predict(base_url)
+durations.append((time.perf_counter() - before) * 1000)
+```
+
+- p95 uses a nearest-rank estimate in the script; 30 requests provide only a small illustrative sample
+- failure counts remain visible because failed requests are excluded from successful-request latency
+- a sequential local client includes client and network overhead and does not measure maximum concurrent capacity
+- for capacity testing, vary arrival rate, concurrent clients, batch size, and input complexity while monitoring server resources
+
+## understand the tradeoffs
+
+- batching processes several rows together and can improve throughput, while waiting to form a batch adds delay
+- more replicas can improve capacity and resilience, while adding model memory and infrastructure cost
+- adding workers can duplicate model memory; measure the memory needed by each process [worker memory](https://fastapi.tiangolo.com/deployment/concepts/)
+- queues hold work waiting for capacity; growing queues often increase end-to-end latency even when model computation is unchanged
+- autoscaling takes time to react and initialise instances; retain enough capacity for the intended service target [autoscaling behaviour](https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/)
+
+## account for the whole workload
+
+- include compute, accelerators, storage, data transfer, logging, and idle capacity in the cost window
+- cost per successful prediction equals total cost divided by successful predictions over the same window
+- when throughput is steady, hourly compute cost divided by `successful requests per second × 3600` gives a compute-only estimate per successful request
+- compare configurations under the same model, inputs, load pattern, and latency/error criteria
+- record the image, resource settings, model id, and measurement method so later comparisons are interpretable
+
+next: [monitoring & retraining](../monitoring/index.qmd)

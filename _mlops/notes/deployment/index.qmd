@@ -3,7 +3,7 @@ title: "deployment & infrastructure"
 toc: false
 ---
 
-releasing models and managing the systems around them.
+choose infrastructure, validate a release, plan rollback, and measure performance using a small local service
 
 ::: {.topic-index}
 

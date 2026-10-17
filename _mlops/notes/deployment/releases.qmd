@@ -2,12 +2,68 @@
 title: "staged releases & rollback"
 ---
 
-[outline]{.note-status}
+## prepare a release
 
-## topics
+- a release is a particular version of the application, model, and configuration made available for use
+- staging is an environment for checking a release before production, the environment serving actual users or workloads
+- keep the approved artifact, preprocessing, input contract, dependency versions, and evaluation report together
+- promote the same tested artifact, recording its model id and image digest rather than rebuilding from a moving tag
 
-- staging and production environments
-- canary releases, shadow testing, and a/b testing
-- release criteria and rollback plans
+## release patterns
 
-notes will be added here as this section develops.
+::: {.table-responsive tabindex="0"}
+
+| pattern | definition | useful when |
+|---|---|---|
+| rolling update | gradually replace instances while others continue serving | the platform can maintain enough healthy capacity during updates |
+| blue-green | keep old and new environments, then switch routing | a prepared replacement and rapid traffic switch are valuable |
+| canary | send a small share of live requests to a candidate before increasing exposure | errors and latency can be observed on limited traffic |
+| shadow | copy requests to a candidate without using its output for the user’s response | compare behaviour before allowing candidate decisions |
+| a/b test | assign traffic to variants under a defined experiment | estimate differences in relevant outcomes with a suitable analysis |
+
+:::
+
+- blue-green and canary releases require routing controls and enough capacity during the transition [deployment guardrails](https://docs.aws.amazon.com/sagemaker/latest/dg/deployment-guardrails-blue-green.html)
+- shadow traffic still consumes resources and processes copied inputs; candidate output is observed without driving the live response [shadow testing](https://docs.aws.amazon.com/sagemaker/latest/dg/shadow-tests.html)
+- a canary is a release-risk technique; a/b testing needs an experimental design, outcome definitions, and an observation window
+
+## check identity and predictions
+
+- readiness means the service can accept work; liveness means its process is functioning, and neither proves model quality
+- the [deployment exercise](../../examples/deployment-demo.zip) includes `check_release.py`, which compares the service’s model fingerprint and prediction with your trusted local pipeline
+
+```bash
+python check_release.py \
+  --base-url http://127.0.0.1:8000 \
+  --model-path artifacts/run-001/pipeline.joblib
+```
+
+- its central prediction check uses a fixed synthetic input and a numeric tolerance
+
+```python
+result = read_json(base_url + "/predict", {"rows": [[0.0] * 10]})
+expected = model.predict_proba([[0.0] * 10])[:, 1][0]
+if not math.isclose(result["probabilities"][0], expected, rel_tol=1e-7, abs_tol=1e-9):
+    raise ValueError("prediction check failed")
+```
+
+- the full script also verifies readiness and the model id; one smoke request is followed by representative evaluation and load checks
+- the toy fingerprint identifies the saved model bytes; it is separate from the container image digest
+
+## make rollback concrete
+
+- rollback restores a retained working release; record its artifact, environment, configuration, and compatible feature definitions before changing anything
+- decide what triggers a halt or rollback, such as service errors, latency degradation, or failed prediction checks
+- check that earlier code can still read current data and interfaces; restoring an image does not reverse incompatible data changes
+- this compose command is a manual single-service replacement template, using a previously retained image
+
+```bash
+DEMO_IMAGE=mlops-demo:previous-approved docker compose up -d --wait
+python check_release.py --model-path artifacts/previous-approved/pipeline.joblib
+```
+
+- replace both example paths with the retained image or digest and its matching trusted artifact
+- compose does not supply weighted canary routing or automatic model-quality rollback in this exercise
+- after restoration, rerun prediction checks and confirm traffic is reaching the intended version
+
+next: [latency, reliability & cost](tradeoffs.qmd)
