@@ -3,7 +3,9 @@ title: "experiments & reproducibility"
 toc: false
 ---
 
-tracking experiments and reproducing model results.
+learn to record experiments, reproduce workflows, and trace model versions back to their inputs
+
+nextflow, docker, and slurm appear in the reproducibility notes, with links between workflow records and experiment tracking
 
 ::: {.topic-index}
 

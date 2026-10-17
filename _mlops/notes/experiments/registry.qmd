@@ -2,12 +2,54 @@
 title: "model registries & lineage"
 ---
 
-[outline]{.note-status}
+## tracking versus a registry
 
-## topics
+- experiment tracking records runs and their results
+- a model registry organises named models and versions, with metadata and references to their originating runs
+- lineage connects a model to the data, code, environment, and decisions that produced it
+- a registry entry does not by itself deploy a model or establish that it is suitable for use [mlflow registry overview](https://mlflow.org/docs/latest/ml/model-registry/)
 
-- model artifacts, versions, and metadata
-- tracing a model back to its training run
-- model review and promotion between environments
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| concept | example |
+|---|---|
+| registered model | `demo-classifier` |
+| version | one particular registered artifact |
+| alias | `candidate` points to a selected version |
+| lineage | artifact → training run → code and data versions |
+
+:::
+
+## log a model, then register it
+
+- with mlflow 3 installed, use the same sqlite tracking store as the [tracking example](tracking.qmd)
+- this loads the trusted pipeline created by your local lifecycle run, logs it in mlflow model format, and registers a version [registry workflow](https://mlflow.org/docs/latest/ml/model-registry/workflow/)
+
+```python
+import joblib
+import mlflow
+import mlflow.sklearn
+from mlflow import MlflowClient
+
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_experiment("lifecycle-demo")
+model = joblib.load("artifacts/run-001/pipeline.joblib")
+with mlflow.start_run():
+    info = mlflow.sklearn.log_model(model, name="pipeline")
+    version = mlflow.register_model(info.model_uri, "demo-classifier")
+client = MlflowClient()
+client.set_registered_model_alias("demo-classifier", "candidate", version.version)
+```
+
+- record the original run id, dataset version, and code revision on this new run so the lineage remains connected
+- for a real release, also record the input signature, evaluation report, limitations, and intended use
+- an alias is mutable; record the resolved version for each deployment rather than relying on the alias name alone [model aliases](https://mlflow.org/docs/latest/ml/model-registry/)
+
+## promote deliberately
+
+- review performance against a baseline, error patterns, relevant subgroups, and inference compatibility
+- link the approval decision and responsible owner to the version
+- retain the previous version and its environment so rollback is possible
+- in a bioinformatics workflow, preserve versioned output artifacts and their workflow lineage even when there is no trained model to register
+
+next: [packaging & serving](../packaging-serving/index.qmd)

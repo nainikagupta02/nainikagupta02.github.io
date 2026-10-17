@@ -2,12 +2,61 @@
 title: "experiment tracking"
 ---
 
-[outline]{.note-status}
+## what is a run?
 
-## topics
+- a run is one execution with a particular dataset, configuration, and environment
+- tracking connects the choices you made to the outputs they produced
+- keep failed runs too, with their status and logs, so failures can be investigated
 
-- logging parameters, metrics, and artifacts
-- comparing runs and recording configurations
-- experiment tracking tools and workflow integration
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| record | examples |
+|---|---|
+| inputs | dataset snapshot, feature list, split ids |
+| code | git commit and whether there were uncommitted changes |
+| settings | hyperparameters, seed, preprocessing choices |
+| environment | dependency versions, container digest, hardware |
+| results | validation metrics, runtime, warnings |
+| artifacts | fitted pipeline, predictions, evaluation report |
+
+:::
+
+## compare like with like
+
+- use the same dataset version, split, metric definition, and evaluation procedure
+- change one factor at a time initially so differences are easier to interpret
+- inspect variation across seeds or folds rather than relying on one favourable score
+- use validation results to choose candidates; keep the final test set out of the tuning loop
+
+## add mlflow to the lifecycle example
+
+- install `mlflow` in your project environment, then run this from the folder containing `artifacts/run-001`
+- it records the results already produced by the [lifecycle example](../foundations/lifecycle.qmd), without inventing new scores
+- mlflow organises runs and logs parameters, metrics, tags, and artifacts [tracking guide](https://mlflow.org/docs/latest/ml/tracking/)
+
+```python
+import json
+from pathlib import Path
+import mlflow
+
+report = json.loads(Path("artifacts/run-001/run.json").read_text())
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_experiment("lifecycle-demo")
+with mlflow.start_run():
+    mlflow.log_params({"c": report["selected_c"], "seed": report["seed"]})
+    mlflow.log_metric("validation_auc", report["selected_validation_auc"])
+    mlflow.set_tag("data_sha256", report["data_sha256"])
+    mlflow.log_artifacts("artifacts/run-001", artifact_path="run-output")
+```
+
+- save the git commit, split identifiers, and dependency lock file alongside the run too
+- a data fingerprint identifies bytes, but does not preserve the dataset itself
+- logging a joblib file as an artifact does not create an mlflow model or register it automatically
+
+## connect research workflow records
+
+- nextflow reports and task traces capture execution details; attach them to the corresponding experiment [nextflow reports](https://docs.seqera.io/nextflow/reports)
+- record the container digest and slurm job ids alongside the workflow run id
+- execution records explain how a pipeline ran; you still need task-specific metrics to judge its results
+
+next: [code, data & environment versioning](reproducibility.qmd)

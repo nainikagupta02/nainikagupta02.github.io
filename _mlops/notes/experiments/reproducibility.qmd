@@ -2,12 +2,66 @@
 title: "code, data & environment versioning"
 ---
 
-[outline]{.note-status}
+## what should a rerun preserve?
 
-## topics
+- keep the code revision, input snapshot, reference files, configuration, split rules, and environment
+- record seeds and hardware; exact numerical agreement can still depend on libraries, parallelism, and algorithms
+- define what counts as agreement: identical files, matching predictions within a tolerance, or comparable evaluation results
 
-- linking code, data, and model versions
-- dependency management and environment configuration
-- randomness, seeds, and reproducibility limits
+## nextflow, docker & slurm
 
-notes will be added here as this section develops.
+::: {.table-responsive tabindex="0"}
+
+| tool | role | record with the run |
+|---|---|---|
+| nextflow | connect processes and manage task execution | pipeline revision, parameters, nextflow version, reports |
+| docker | package software and dependencies in an image | image digest and build inputs |
+| slurm | schedule jobs and allocate cluster resources | job ids, requested resources, logs |
+
+:::
+
+- in a bioinformatics workflow, also version the reference genome, annotation, sample sheet, and tool settings
+- changing a reference file can change results even when the workflow code is unchanged
+
+## a small nextflow configuration
+
+- this `nextflow.config` fragment belongs beside an existing `main.nf` workflow
+- `local_docker` requires docker on the local machine; the `hpc` profile requires access to a slurm cluster and a suitable software environment
+
+```groovy
+profiles {
+    local_docker {
+        process.executor = 'local'
+        docker.enabled = true
+        // set process.container in your workflow to the required image
+    }
+    hpc {
+        process.executor = 'slurm'
+        process.cpus = 2
+        process.memory = '4 GB'
+        process.time = '1h'
+    }
+}
+```
+
+- nextflow submits tasks through its selected executor; slurm allocates the requested resources [executor guide](https://docs.seqera.io/nextflow/executor), [slurm guide](https://slurm.schedmd.com/quickstart.html)
+- this example does not enable containers for `hpc`; configure the runtime supported by your cluster, such as apptainer, and provide software environments for every process [container options](https://docs.seqera.io/nextflow/container)
+
+```bash
+# with an existing workflow and configured process containers
+nextflow run main.nf -profile local_docker -with-report report.html -with-trace trace.tsv
+# resume eligible tasks from that run
+nextflow run main.nf -profile local_docker -resume
+```
+
+- resume needs the task cache and corresponding work outputs; it is a recovery feature, not an independent rerun from scratch [cache and resume](https://docs.seqera.io/nextflow/cache-and-resume)
+- pin container images by digest for an exact image version; tags can change, and image pinning alone does not fix input data or hardware differences [docker image pinning](https://docs.docker.com/build/building/best-practices/)
+
+## check reproducibility
+
+- rerun a small fixed dataset in a fresh output location
+- compare outputs or metrics using a tolerance appropriate to the task
+- investigate differences in code, inputs, configuration, references, and environment before attributing them to randomness
+- keep a compact run manifest linking these records to the [dataset version](../data-pipelines/versioning.qmd)
+
+next: [model registries & lineage](registry.qmd)
