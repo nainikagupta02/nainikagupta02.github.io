@@ -3,7 +3,7 @@ title: "testing, ci/cd & orchestration"
 toc: false
 ---
 
-testing and automating repeatable ml workflows.
+test the serving pipeline, automate checks, and coordinate candidate training with a small runnable workflow
 
 ::: {.topic-index}
 

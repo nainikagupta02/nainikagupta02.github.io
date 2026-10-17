@@ -2,12 +2,69 @@
 title: "ci/cd pipelines"
 ---
 
-[outline]{.note-status}
+## what gets automated?
 
-## topics
+- **ci, continuous integration:** run checks when proposed code changes are integrated or reviewed
+- **continuous delivery:** prepare a validated release that can be deployed after approval
+- **continuous deployment:** automatically deploy changes that pass the required gates
+- a gate is a condition that must pass before the next stage proceeds; a green ci run means its configured checks passed
 
-- checks triggered by code changes
-- building and validating release artifacts
-- delivery, deployment, and approval gates
+## github actions vocabulary
 
-notes will be added here as this section develops.
+::: {.table-responsive tabindex="0"}
+
+| term / tool | definition | use case |
+|---|---|---|
+| github actions | github’s workflow automation service | run checks for a pull request or push |
+| workflow | an event-triggered configuration written in yaml | describe the sequence of checks |
+| yaml | a structured text format using keys and indentation | configure triggers, jobs, and steps |
+| runner | the machine executing a job | provide a clean environment for testing |
+| job / step | a group of steps / one command or reusable action | install dependencies, then run tests |
+| action | a reusable workflow component | check out code or install a python version |
+| permission | access granted to the workflow token | allow reading repository contents for checks |
+
+:::
+
+- `actions/checkout` retrieves repository code and `actions/setup-python` selects the python runtime [setup-python documentation](https://github.com/actions/setup-python)
+
+## a minimal ci template
+
+- place the [exercise files](../../examples/automation-demo.zip) at the root of a dedicated repository; the download includes `.github/workflows/checks.yml`
+- this template trains a small synthetic candidate and runs the same tests used locally
+
+```yaml
+name: model checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-test.in
+      - run: python run_workflow.py --run-id run-001
+      - run: python -m pytest -q
+```
+
+- `workflow_dispatch` allows a manual run; jobs use a fresh github-hosted runner here [workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
+- requirements in this exercise are unpinned; record reviewed dependency versions for repeatable checks
+- the template has no deployment step or credentials; use it to learn ci before extending the release process
+
+## extend toward delivery
+
+- build a versioned package or container from the checked code and approved model artifact
+- record its digest, code revision, data version, and evaluation report
+- staging is an environment for checking a release before production; test inference compatibility there
+- apply the required approval gate, promote the same tested artifact, and retain the previous version for rollback
+- run service checks after release and monitor prediction quality when outcomes arrive
+- keep model selection on validation data; repeatedly tuning to a fixed test set in ci undermines its role as a final independent evaluation [ml pipeline guidance](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+
+next: [orchestration & continuous training](orchestration.qmd)

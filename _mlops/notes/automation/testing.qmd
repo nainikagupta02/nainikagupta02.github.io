@@ -2,12 +2,59 @@
 title: "code, data & model tests"
 ---
 
-[outline]{.note-status}
+## what should be tested?
 
-## topics
+- a test checks an expected behaviour and fails when the observed result disagrees
+- an assertion expresses that expectation inside a test; use explicit exceptions for required runtime checks outside tests
+- passing tests provides evidence for the behaviours tested, while model suitability still needs evaluation for the intended task
 
-- unit and integration tests
-- data checks and model-quality checks
-- testing the full prediction pipeline
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| test type | definition | useful example |
+|---|---|---|
+| unit | check one small component in isolation | a candidate gate rejects an invalid metric |
+| integration | check components working together | api predictions match the saved pipeline |
+| data contract | check schema and data-quality rules | reject a row with the wrong feature count |
+| model quality | compare performance with predefined criteria | validation performance beats a baseline |
+| regression | check that a change preserves an expected behaviour | fixed inputs still produce agreed predictions within a tolerance |
+| smoke | run a small path to catch major failures | load the artifact and obtain one prediction |
+
+:::
+
+## tools and test vocabulary
+
+- pytest is a python test runner; it discovers `test_` functions, executes assertions, and reports failures [pytest introduction](https://docs.pytest.org/en/stable/getting-started.html)
+- a fixture provides reusable setup and cleanup, such as starting a test client; use it to keep tests independent [fixture guide](https://docs.pytest.org/en/stable/how-to/fixtures.html)
+- fastapi’s `TestClient` sends requests to the application in-process, useful for checking endpoints without starting a network server [fastapi testing](https://fastapi.tiangolo.com/tutorial/testing/)
+- a mock replaces a dependency during a test; use one to simulate a missing artifact or a failed training command
+- a flaky test passes or fails inconsistently without a relevant change; investigate uncontrolled randomness, timing, or external dependencies
+
+## test the serving exercise
+
+- [download the complete automation exercise](../../examples/automation-demo.zip) into a fresh folder
+- use python 3.12 and install `requirements-test.in`; it includes the app dependencies, pytest, and starlette’s optional client dependencies
+- starlette is the underlying web framework supplying fastapi’s test client; the optional dependencies support its installed client version
+
+```bash
+python -m pip install -r requirements-test.in
+python run_workflow.py --run-id run-001
+python -m pytest -q
+```
+
+- the download contains `test_app.py`; this is one compact integration test, assuming the prepared `client` fixture
+
+```python
+def test_predictions_match_saved_pipeline(client):
+    rows = [[0.0] * 10, [1.0] * 10]
+    response = client.post("/predict", json={"rows": rows})
+    assert response.status_code == 200
+    model = joblib.load("artifacts/run-001/pipeline.joblib")
+    expected = model.predict_proba(rows)[:, 1]
+    np.testing.assert_allclose(response.json()["probabilities"], expected)
+```
+
+- numpy’s `assert_allclose` compares numeric results within a tolerance, useful for floating-point predictions
+- the full tests also reject malformed inputs, check missing-artifact startup, and confirm a failed workflow does not become a candidate
+- fixed examples catch regressions; use representative evaluation data and subgroup analysis to assess prediction quality beyond these examples
+
+next: [ci/cd pipelines](ci-cd.qmd)

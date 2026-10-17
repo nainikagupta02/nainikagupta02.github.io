@@ -2,12 +2,64 @@
 title: "orchestration & continuous training"
 ---
 
-[outline]{.note-status}
+## coordinate the workflow
 
-## topics
+- orchestration coordinates tasks, dependencies, execution state, and failures across a workflow
+- a task is one unit of work; a dependency states what must finish before another task can start
+- a dag is a directed acyclic graph of those dependencies, useful for expressing steps without circular requirements
+- a trigger starts a run, such as a schedule, new input data, or a code change
 
-- pipeline tasks and dependencies
-- scheduling, retries, and failure handling
-- training triggers and validation before release
+## tools and responsibilities
 
-notes will be added here as this section develops.
+::: {.table-responsive tabindex="0"}
+
+| tool | definition | use case |
+|---|---|---|
+| nextflow | a workflow engine connecting processes and their inputs/outputs | coordinate bioinformatics tasks with containerised tools |
+| prefect | a python workflow orchestration framework with tracked flows and tasks | coordinate python data and training steps with observable run state |
+| slurm | a cluster workload manager and scheduler | allocate resources to submitted tasks |
+| subprocess | python’s interface for launching external commands | implement the small sequential runner below |
+
+:::
+
+- nextflow processes define task execution and data connections [process guide](https://docs.seqera.io/nextflow/process)
+- in prefect, a flow coordinates work while tasks support tracked execution and configurable retries [flows](https://docs.prefect.io/v3/concepts/flows), [tasks](https://docs.prefect.io/v3/concepts/tasks)
+- slurm schedules compute; the workflow engine still decides task dependencies and downstream execution
+
+## start with a local runner
+
+- the [automation exercise](../../examples/automation-demo.zip) includes `run_workflow.py`, which trains the synthetic model, validates its report, and writes a run manifest
+- its central sequence is below; the complete script also handles run ids and failure records
+
+```python
+subprocess.run(
+    [sys.executable, "lifecycle_demo.py", "--output", str(output)],
+    check=True,
+)
+report = json.loads((output / "run.json").read_text())
+score = check_candidate(report)
+state.update(status="candidate", validation_auc=score)
+```
+
+- `check=True` raises an error when the command exits unsuccessfully, preventing normal progression to validation
+- the example gate requires finite validation metrics, a score above the baseline, and validation roc auc of at least 0.75
+- 0.75 is an illustrative threshold for this synthetic exercise; real criteria must reflect the task and consequences of errors
+- `workflow-runs/<run-id>.json` records the current stage and outcome; a failed run is marked `failed`, while a passing run is only a `candidate`
+- the runner refuses existing run ids to avoid overwriting prior results; it does not provide scheduling, distributed execution, or automatic resume
+
+## retries and safe recovery
+
+- a retry repeats a failed task; use bounded retries for transient problems such as a temporary connection failure
+- backoff increases the delay between attempts so repeated failures do not overload a service
+- a timeout limits how long a task can run; use it to stop stalled jobs
+- do not automatically retry permanent schema errors or rejected candidates without changing the underlying cause
+- keep writes idempotent, meaning repeated execution does not duplicate logical outputs, and record checkpoints only after successful output publication
+
+## continuous training
+
+- ct automates retraining when a trigger occurs; it still needs data checks and candidate validation before promotion [continuous training guide](https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning)
+- separate “training completed” from “approved for release”; drift or new data can trigger investigation without forcing a replacement
+- record input versions, workflow configuration, environment, metrics, and approval decisions with each candidate
+- use orchestration when persistent state, retries, scheduling, or parallel dependencies justify more than a local script
+
+next: [deployment & infrastructure](../deployment/index.qmd)
