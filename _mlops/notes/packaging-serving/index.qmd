@@ -3,7 +3,7 @@ title: "packaging & serving"
 toc: false
 ---
 
-packaging models and making predictions available.
+package a fitted pipeline, run batch predictions, and serve a validated api using the same local exercise
 
 ::: {.topic-index}
 

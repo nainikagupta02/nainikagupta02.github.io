@@ -2,12 +2,75 @@
 title: "dependencies & docker"
 ---
 
-[outline]{.note-status}
+## what are we packaging?
 
-## topics
+- packaging brings together the fitted preprocessing/model pipeline, inference code, dependencies, and input contract
+- an input contract specifies feature names or order, types, units, and allowed missing values; use it to keep predictions consistent with training
+- keep a model id and the training run record beside the package so a prediction can be traced back to its source
+- save preprocessing with the model and retain compatible dependency versions [scikit-learn persistence](https://scikit-learn.org/stable/model_persistence.html)
 
-- dependency isolation and environment files
-- docker images, containers, and build files
-- packaging training and inference code
+## environment and container terms
 
-notes will be added here as this section develops.
+::: {.table-responsive tabindex="0"}
+
+| term / tool | definition | use case |
+|---|---|---|
+| virtual environment | a separate python package environment, created here with `venv` | isolate one project’s libraries |
+| dependency snapshot | a file listing resolved package versions | reinstall the environment used to train the saved model |
+| docker | a platform for building and running containers | package the application and its software environment |
+| image / container | a packaged filesystem and configuration / an instance created from it | build once, then start instances for predictions |
+| dockerfile | instructions used to build an image | specify the base image, files, installation, and startup command |
+| build context | the files available to the image builder | provide the application and artifact while excluding unrelated files |
+| layer / build cache | an image filesystem change / reusable build results | avoid reinstalling unchanged dependencies on every build |
+| port mapping | forwarding a host port to a container port | reach the service inside the container |
+
+:::
+
+- an image tag is a reusable label; a digest identifies exact image content, useful when recording a reproducible release [docker build guidance](https://docs.docker.com/build/building/best-practices/)
+
+## prepare the local exercise
+
+- [download the exercise files](../../examples/serving-demo.zip), unzip them, and open a terminal in that folder
+- this uses synthetic data and python 3.12, matching the docker base image
+- train and serve within the same environment before trying a container
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.in
+python lifecycle_demo.py --output artifacts/run-001
+python -m pip freeze > requirements-lock.txt
+```
+
+- `requirements.in` lists the required libraries; `requirements-lock.txt` records the resolved versions for this run
+- this snapshot does not guarantee compatibility across operating systems or hardware, so test the resulting image
+
+## read the dockerfile
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements-lock.txt ./
+RUN pip install --no-cache-dir -r requirements-lock.txt
+COPY --chmod=0444 app.py ./
+COPY --chmod=0444 artifacts/run-001/pipeline.joblib ./artifacts/run-001/pipeline.joblib
+USER 10001:10001
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+- `FROM` selects the base image, `COPY` adds files, and `RUN` executes a build step
+- `USER` selects a non-root numeric user; `CMD` starts the prediction server when the container runs
+- `EXPOSE` documents the container port; `-p` below actually publishes it on the host [dockerfile instructions](https://docs.docker.com/get-started/docker-concepts/building-images/writing-a-dockerfile/)
+
+```bash
+docker build -t mlops-demo:local .
+docker run --rm -p 127.0.0.1:8000:8000 mlops-demo:local
+```
+
+- docker must be installed with its engine running; the host binding keeps this learning service local
+- the base-image tag is convenient for the exercise; record an image digest for a fixed release
+- add a `.dockerignore` to exclude the virtual environment and unrelated files from the build context
+- rebuild and revalidate deliberately when updating dependencies or the model [container deployment guide](https://fastapi.tiangolo.com/deployment/docker/)
+
+next: [apis, batch & real-time inference](serving.qmd)

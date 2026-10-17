@@ -2,12 +2,99 @@
 title: "apis, batch & real-time inference"
 ---
 
-[outline]{.note-status}
+## choose how predictions are delivered
 
-## topics
+- serving runs the fitted pipeline on new inputs and returns or stores its predictions
+- latency is the time taken for a request; throughput is the number of records or requests processed per unit time
 
-- batch and online prediction workflows
-- prediction api design and input validation
-- keeping preprocessing consistent at inference time
+::: {.table-responsive tabindex="0"}
 
-notes will be added here as this section develops.
+| mode | definition | useful when |
+|---|---|---|
+| batch inference | process a collection and save its predictions | scoring a new cohort overnight |
+| online inference | return predictions in response to individual requests or small batches | an application needs a result while a user waits |
+| streaming inference | process an ongoing flow of events | incoming events require continuous scoring |
+
+:::
+
+- “real-time” needs an explicit latency target; online serving alone does not guarantee a deadline
+- preserve record identifiers, feature order, model id, and input version with saved predictions
+
+## batch example
+
+- `features.csv` is a headerless file with ten numeric columns in the synthetic lifecycle model’s original feature order
+- this is the central pattern in the downloadable `predict_batch.py`; joblib reloads the trusted pipeline and numpy reads/writes numeric arrays
+
+```python
+import joblib
+import numpy as np
+
+model = joblib.load("artifacts/run-001/pipeline.joblib")
+x = np.loadtxt("features.csv", delimiter=",", ndmin=2)
+if x.shape[0] == 0 or x.shape[1] != model.n_features_in_ or not np.isfinite(x).all():
+    raise ValueError("expected non-empty finite rows with ten features")
+probabilities = model.predict_proba(x)[:, 1]
+np.savetxt("predictions.csv", probabilities, header="probability", comments="")
+```
+
+- row order is preserved here; a real batch output should also retain source record ids
+- call `predict` or `predict_proba` on the saved pipeline; fitting a new scaler during inference changes the transformation
+
+## api and tool definitions
+
+::: {.table-responsive tabindex="0"}
+
+| term / tool | definition | use here |
+|---|---|---|
+| http | a request/response protocol used by web services | send an input and receive a result |
+| endpoint | an address and method exposed by a service | `POST /predict` requests predictions |
+| request / response | the client’s input message / the service’s output message | exchange rows and class-1 probabilities as json |
+| fastapi | a python framework for building web apis | define prediction and health endpoints |
+| pydantic | a library for typed data validation | reject missing, malformed, or oversized inputs |
+| uvicorn | a python asgi server, implementing a standard interface between a server and application | run the fastapi app and accept http connections |
+| curl | a command-line http client | send a test request from a terminal |
+
+:::
+
+## a small prediction endpoint
+
+- the [exercise download](../../examples/serving-demo.zip) includes a complete `app.py` with request/response schemas and model loading
+- its request schema accepts 1 to 256 rows, each with exactly ten finite numeric values; it rejects extra top-level fields [request validation](https://fastapi.tiangolo.com/tutorial/body/), [pydantic fields](https://docs.pydantic.dev/latest/concepts/fields/)
+- the endpoint below uses the model loaded at startup, rather than loading or fitting one for every request [application lifespan](https://fastapi.tiangolo.com/advanced/events/)
+
+```python
+@app.post("/predict", response_model=PredictResponse)
+def predict(request: PredictRequest):
+    x = np.asarray(request.rows, dtype=float)
+    return {
+        "probabilities": app.state.model.predict_proba(x)[:, 1].tolist(),
+        "model_id": app.state.model_id,
+    }
+```
+
+- http status codes describe the outcome: `200` indicates success, while `422` here indicates an input-validation failure
+- the download includes an error handler that returns validation details without echoing raw invalid values
+- `model_id` is a short fingerprint of the saved artifact; it identifies which artifact served the request
+- `/health` reports readiness after the model has loaded; it does not assess prediction quality
+- start the local service after [preparing the exercise](containers.qmd)
+
+```bash
+uvicorn app:app --host 127.0.0.1 --port 8000
+```
+
+- in another terminal, send a request with a json body and the corresponding content-type header
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"rows": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]}'
+```
+
+## before using a service for real work
+
+- compare api predictions with direct pipeline predictions on fixed inputs
+- check malformed requests and missing artifacts, and measure latency under the intended load
+- define feature meaning and units; shape/type validation cannot detect swapped features or incorrect units
+- this local exercise has no authentication or production traffic controls; add deployment, security, and monitoring appropriate to the intended use
+
+next: [testing, ci/cd & orchestration](../automation/index.qmd)
