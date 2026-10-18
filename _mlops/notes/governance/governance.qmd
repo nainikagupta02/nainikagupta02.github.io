@@ -2,12 +2,81 @@
 title: "documentation, fairness & approvals"
 ---
 
-[outline]{.note-status}
+## define the decision and its owner
 
-## topics
+- governance assigns responsibility, review processes, and evidence requirements across the ml lifecycle
+- intended use states the task, users, population, and setting a model was evaluated for; out-of-scope use states where that evidence does not support use
+- an owner maintains the system and responds to issues; a reviewer checks evidence before a consequential change
+- the nist ai risk management framework organises risk work into govern, map, measure, and manage [framework overview](https://www.nist.gov/itl/ai-risk-management-framework)
 
-- model documentation and intended use
-- fairness evaluation and limitations
-- review processes, audit trails, and ownership
+## write a model card
 
-notes will be added here as this section develops.
+- a model card documents a model’s purpose, data, evaluation, limitations, and ethical considerations [model cards paper](https://arxiv.org/abs/1810.03993)
+- keep it with the versioned model and evaluation report; update it when data, intended use, or behaviour changes
+- this yaml template starts a record for the synthetic classifier used in these notes
+
+```yaml
+model_id: synthetic-classifier-v1
+owner: learning-demo-maintainer
+intended_use: synthetic binary classification exercise
+out_of_scope: patient care or real-world decisions
+data_version: replace-with-dataset-fingerprint
+code_version: replace-with-git-commit
+evaluation_report: reports/evaluation.json
+limitations:
+  - synthetic data cannot establish real-world performance
+  - subgroup estimates need adequate labelled samples
+review_status: pending
+```
+
+- replace example identifiers with the exact artifact, data, and code versions; attach sample sizes, metrics, uncertainty, and failure cases
+
+## check performance across groups
+
+- subgroup evaluation measures results separately for relevant populations or settings, such as age bands, sites, or scanner types
+- selection rate is the fraction predicted positive; true positive rate is the fraction of actual positives detected; false positive rate is the fraction of actual negatives incorrectly flagged
+- demographic parity compares selection rates; equalized odds compares both true and false positive rates across groups [fairness metric definitions](https://fairlearn.org/main/user_guide/assessment/common_fairness_metrics.html)
+- metrics capture different questions and can conflict; choose them around the decision and its potential harms rather than treating one score as proof of fairness
+- this tiny synthetic example uses pandas for tabular analysis and scikit-learn for a binary confusion matrix
+
+```python
+import pandas as pd
+from sklearn.metrics import confusion_matrix
+
+data = pd.DataFrame({
+    "group": ["a"] * 4 + ["b"] * 4,
+    "target": [0, 0, 1, 1, 0, 0, 1, 1],
+    "score": [0.1, 0.6, 0.7, 0.8, 0.2, 0.3, 0.4, 0.9],
+})
+threshold = 0.5
+rows = []
+for group, part in data.groupby("group"):
+    predicted = (part["score"] >= threshold).astype(int)
+    tn, fp, fn, tp = confusion_matrix(
+        part["target"], predicted, labels=[0, 1]
+    ).ravel()
+    rows.append({
+        "group": group, "n": len(part),
+        "positives": int(tp + fn), "negatives": int(tn + fp),
+        "selection_rate": float(predicted.mean()),
+        "true_positive_rate": tp / (tp + fn) if tp + fn else None,
+        "false_positive_rate": fp / (tn + fp) if tn + fp else None,
+    })
+print(pd.DataFrame(rows).to_string(index=False))
+```
+
+- group a has true positive rate 1 and false positive rate 0.5; group b has true positive rate 0.5 and false positive rate 0
+- four rows per group demonstrate the calculation, not reliable population estimates; undefined rates stay missing when a denominator is zero
+- keep the threshold fixed for comparison, assess label quality and coverage, and report uncertainty and intersecting groups where sample sizes allow
+- fairlearn is a fairness assessment toolkit; its `MetricFrame` computes overall and subgroup metrics and supports bootstrap intervals [metricframe reference](https://fairlearn.org/main/api_reference/generated/fairlearn.metrics.MetricFrame.html)
+
+## review, release, and retain evidence
+
+- an approval gate blocks promotion until an authorized reviewer accepts the required evidence; passing automated metrics alone does not provide that approval
+- attach the frozen artifact id, evaluation and subgroup reports, known limitations, monitoring plan, and rollback target to the decision
+- github environments can require deployment reviewers; configure the environment’s protection rules as well as referencing it in the deployment job, subject to repository and plan support [deployment reviews](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments)
+- an audit trail records who acted, what changed, when, and why; keep authenticated reviewer identities and protect records from unauthorized changes
+- a local yaml field such as `review_status: approved` is documentation, not an enforced approval gate
+- after release, review [monitoring signals](../monitoring/monitoring.qmd), revisit limitations, and investigate incidents with a named owner and recorded corrective actions
+
+[back to mlops notes](../../index.qmd)

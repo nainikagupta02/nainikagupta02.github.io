@@ -2,12 +2,69 @@
 title: "access controls & privacy"
 ---
 
-[outline]{.note-status}
+## decide who can do what
 
-## topics
+- authentication verifies an identity; authorization checks what that identity may do
+- least privilege grants only the permissions needed for a task; deny by default means access stays blocked unless explicitly allowed
+- role-based access control groups permissions by role, such as analyst, training service, or release reviewer
+- a service account is an identity for software; give training access to approved data and artifact storage without granting permission to deploy
+- check permissions on every protected request, including access to another user’s records [authorization guidance](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html)
 
-- access controls and secrets management
-- protecting sensitive data
-- securing model artifacts and prediction services
+## manage secrets
 
-notes will be added here as this section develops.
+- secrets are credentials such as api keys and database passwords; keep them out of source code, notebooks, images, and logs
+- a secrets manager stores credentials with controlled access; [vault](https://developer.hashicorp.com/vault/docs/about-vault/what-is-vault) can issue time-limited credentials and record access
+- rotation replaces a credential; revocation disables it, including after suspected exposure
+- inject credentials at runtime through the approved secret mechanism; environment variables are one delivery option, not a protected vault [secrets guidance](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
+
+## protect a local endpoint
+
+- fastapi’s `APIKeyHeader` extracts a header; the dependency below checks it before allowing access
+- save this as `secure_app.py` and install `fastapi` and `uvicorn` in your environment [fastapi security tools](https://fastapi.tiangolo.com/reference/security/)
+
+```python
+import os
+import secrets
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import APIKeyHeader
+
+app = FastAPI()
+key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+
+def require_key(key: str | None = Depends(key_header)):
+    expected = os.environ.get("DEMO_API_KEY")
+    if not expected:
+        raise HTTPException(status_code=503, detail="service unavailable")
+    if key is None or not secrets.compare_digest(key.encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="invalid credentials")
+
+@app.get("/protected", dependencies=[Depends(require_key)])
+def protected():
+    return {"status": "authorized"}
+```
+
+```bash
+export DEMO_API_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+uvicorn secure_app:app --host 127.0.0.1 --port 8001
+```
+
+- from another terminal with the same environment variable, call the local endpoint
+
+```bash
+curl --fail -H "x-api-key: $DEMO_API_KEY" http://127.0.0.1:8001/protected
+```
+
+- test missing and incorrect keys as well as a correct key; missing server configuration must also refuse access
+- this shared key does not identify individual users or implement per-record permissions; an exposed service also needs tls, identity management, request limits, and authorization policies
+- tls encrypts traffic between endpoints; encryption at rest protects stored data, with access to encryption keys controlled separately
+
+## protect inputs and artifacts
+
+- data minimization means collecting only what the task needs; retention defines how long data and backups remain available
+- pseudonymization replaces direct identifiers while retaining a possible link back; treat linkable records as sensitive and protect the mapping separately
+- for ehr, claims, or genomics workflows, use synthetic examples publicly and keep identifiable records in approved storage with controlled access [privacy guidance](https://cheatsheetseries.owasp.org/cheatsheets/User_Privacy_Protection_Cheat_Sheet.html)
+- log request ids, model versions, timings, and outcomes of access checks rather than raw records, credentials, or prediction payloads [logging guidance](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+- artifact provenance records where a model came from; a checksum detects changes against a trusted reference but does not establish who produced it
+- load pickle or joblib models only from trusted sources because loading can execute code; retain compatible dependency versions [model persistence](https://scikit-learn.org/stable/model_persistence.html)
+
+next: [documentation, fairness & approvals](governance.qmd)

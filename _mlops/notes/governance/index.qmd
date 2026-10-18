@@ -3,7 +3,7 @@ title: "governance & security"
 toc: false
 ---
 
-documenting, securing, and reviewing ml systems.
+document intended use, protect data and services, and keep evidence for model decisions
 
 ::: {.topic-index}
 
