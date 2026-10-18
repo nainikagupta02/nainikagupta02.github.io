@@ -58,12 +58,4 @@ documenting, securing, and reviewing ml systems
 
 :::
 
-## how my background shaped these notes
-
-my background in computational biology and healthcare data science made me curious about how we turn messy data into meaningful results.\
-as my analyses grew, i began thinking more about how to repeat them and keep track of what had changed.\
-working with different datasets also made me question whether a model would behave the same way in a new setting.\
-moving from analysis to serving predictions brought new questions about consistency, reliability, and when an input needs a closer look.\
-these notes follow that learning process, from building reproducible workflows to understanding how models are used and maintained responsibly.
-
 [back to all notes](https://nainikagupta02.github.io/notes/)
