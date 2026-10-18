@@ -58,4 +58,16 @@ documenting, securing, and reviewing ml systems
 
 :::
 
+## how my background shaped these notes
+
+coming from computational biology and healthcare data science, i approached mlops through questions about whether an analysis could be repeated, whether a comparison was meaningful, and whether a model would behave as expected on a different dataset
+
+- **reproducibility:** in scperturbeval, results depended on preprocessing, gene space, baselines, and metrics; recording the git sha, parameters, and step status helped me trace results back to the experiment that produced them
+- **validation:** patient-grouped folds and frozen external evaluation in aml made me think about independence between samples and whether a model could transfer to another cohort; in claims prediction, a training-only target threshold helped prevent leakage
+- **biological meaning:** evaluating DEG recovery and pathway enrichment in scperturbeval pushed me to ask whether predictions captured relevant biology, alongside their numerical similarity to observed data
+- **workflow orchestration:** nextflow pipelines for aml and prostate histopathology connected scientific tools into repeatable workflows; containerization and hpc execution in histopathology made software environments and compute requirements part of the analysis
+- **distribution shift:** comparing beat-aml with tcga connected expression differences to their effects on model predictions; adding an out-of-distribution guard brought input checks into the prediction workflow
+- **serving:** wrapping frozen aml models in fastapi and docker raised a practical question: would the packaged service reproduce the predictions i had evaluated? checking it against saved tcga reference predictions tested that connection
+- **governance:** manifests and model lineage gave me a starting point for tracing results; they also raised questions about intended use, access, review, and the limits of the available evidence, which i explore in these notes
+
 [back to all notes](https://nainikagupta02.github.io/notes/)
