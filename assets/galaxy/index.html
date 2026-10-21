@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Galaxy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+
+<style>
+/* ---------------------------------------------------------------
+   layout concept: a force-directed "star map" with two lenses —
+   suns are either disciplines (what fields the work spans) or
+   approach stages (how the work actually gets done); switching
+   lenses re-forms the same stars into a different constellation.
+   color: deep space navy, a warm paper accent for chrome, a
+   desaturated categorical palette (one hue per sun) for the suns only.
+   type: Fraunces (display) + IBM Plex Sans (ui) + IBM Plex Mono (data)
+----------------------------------------------------------------- */
+:root{
+  --bg:#090c15;
+  --bg-elev:#121728;
+  --bg-elev-2:#181f36;
+  --fg:#eef1fb;
+  --fg-dim:#8d96b8;
+  --fg-faint:#5a6287;
+  --accent:#e8b96a;
+  --line:#2a3150;
+  --edge:#4e5c99;
+  --star:#eef1fb;
+  color-scheme: dark;
+
+  --c-genomics:#f2a154;
+  --c-imaging:#6a9fd8;
+  --c-survival:#c08fe0;
+  --c-statsepi:#8fd0c9;
+  --c-ml:#e8617a;
+  --c-systems:#e8d35c;
+  --c-dataeng:#c99a73;
+  --c-structural:#f49ac2;
+  --c-clinical:#7fc97f;
+  --c-scicomm:#b0a8a0;
+
+  --c-eda:#6fb8e0;
+  --c-feateng:#e3a85c;
+  --c-stats:#6fd4c0;
+  --c-validation:#e8617a;
+  --c-interp:#b48ee0;
+  --c-usability:#7fc97f;
+
+  --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ui:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--font-ui);
+  overflow:hidden;
+  position:relative;
+}
+
+body::after{
+  content:"";
+  position:fixed; inset:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.35) 0, transparent 60%),
+    radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,.3) 0, transparent 60%),
+    radial-gradient(1.5px 1.5px at 60% 70%, rgba(255,255,255,.25) 0, transparent 60%),
+    radial-gradient(1px 1px at 30% 85%, rgba(255,255,255,.3) 0, transparent 60%),
+    radial-gradient(1px 1px at 92% 60%, rgba(255,255,255,.3) 0, transparent 60%),
+    radial-gradient(1.5px 1.5px at 45% 35%, rgba(255,255,255,.2) 0, transparent 60%),
+    radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,.25) 0, transparent 60%);
+  pointer-events:none;
+  z-index:0;
+}
+
+.stage{ position:fixed; inset:0; z-index:1; }
+.stage svg{ display:block; width:100%; height:100%; }
+
+.ui{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  pointer-events:none;
+}
+.ui > *{ pointer-events:auto; }
+
+header{
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  padding-bottom:14px;
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  background:linear-gradient(to bottom, rgba(9,12,21,.92) 0%, rgba(9,12,21,.55) 70%, transparent 100%);
+}
+header h1{
+  margin:0;
+  font-family:var(--font-display);
+  font-weight:560;
+  font-size:clamp(22px, 4vw, 30px);
+  letter-spacing:.01em;
+  text-wrap:balance;
+}
+header h1 em{ font-style:italic; color:var(--accent); font-weight:500; }
+header p{
+  margin:0;
+  max-width:56ch;
+  color:var(--fg-dim);
+  font-size:13.5px;
+  line-height:1.5;
+  min-height:1.5em;
+}
+header .hint{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--fg-faint);
+  letter-spacing:.02em;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+}
+.lens-switch{
+  display:inline-flex;
+  background:var(--bg-elev);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:3px;
+  gap:2px;
+}
+.pill-btn{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.03em;
+  color:var(--fg-dim);
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:999px;
+  padding:6px 13px;
+  cursor:pointer;
+  transition:border-color .15s, color .15s, background .15s;
+}
+.lens-switch .pill-btn:hover{ color:var(--fg); }
+.lens-switch .pill-btn.active{
+  color:var(--bg);
+  background:var(--accent);
+  font-weight:500;
+}
+.pill-btn.ghost{
+  background:var(--bg-elev);
+  border-color:var(--line);
+}
+.pill-btn.ghost:hover{ color:var(--fg); border-color:var(--fg-faint); }
+
+.legend{
+  position:absolute;
+  left: max(18px, env(safe-area-inset-left, 0px));
+  bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  right: max(18px, env(safe-area-inset-right, 0px));
+  z-index:2;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  pointer-events:none;
+}
+.legend > *{ pointer-events:auto; }
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--fg-dim);
+  background:rgba(18,23,40,.85);
+  backdrop-filter:blur(6px);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:5px 10px 5px 8px;
+  cursor:pointer;
+  transition:border-color .15s, color .15s;
+  user-select:none;
+}
+.chip:hover{ color:var(--fg); border-color:var(--fg-faint); }
+.chip.selected{ color:var(--fg); border-color:currentColor; box-shadow:0 0 0 1px currentColor inset; }
+.chip .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+
+.tooltip{
+  position:fixed;
+  z-index:5;
+  pointer-events:none;
+  background:var(--bg-elev-2);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:8px 11px;
+  max-width:240px;
+  font-size:12px;
+  line-height:1.45;
+  color:var(--fg);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+  opacity:0;
+  transition:opacity .1s;
+}
+.tooltip .t-title{ font-weight:600; margin-bottom:2px; }
+.tooltip .t-meta{ color:var(--fg-dim); font-family:var(--font-mono); font-size:10.5px; }
+.tooltip .t-hint{ color:var(--fg-faint); font-size:10.5px; margin-top:4px; }
+
+.panel{
+  position:fixed;
+  top:0; right:0; bottom:0;
+  width:min(400px, 94vw);
+  z-index:6;
+  background:var(--bg-elev);
+  border-left:1px solid var(--line);
+  padding-top: max(22px, env(safe-area-inset-top, 0px));
+  padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-left:22px;
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  box-shadow:-20px 0 50px rgba(0,0,0,.4);
+  overflow-y:auto;
+}
+.panel.open{ transform:translateX(0); }
+.panel-close{
+  align-self:flex-end;
+  background:none;
+  border:1px solid var(--line);
+  color:var(--fg-dim);
+  border-radius:999px;
+  width:30px; height:30px;
+  font-size:15px;
+  cursor:pointer;
+  line-height:1;
+}
+.panel-close:hover{ color:var(--fg); border-color:var(--fg-faint); }
+.panel-kicker{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--accent);
+}
+.panel h2{
+  font-family:var(--font-display);
+  font-weight:560;
+  font-size:24px;
+  margin:0;
+  line-height:1.15;
+  text-wrap:balance;
+}
+.panel .org{ color:var(--fg-dim); font-size:13.5px; line-height:1.5; }
+.panel .org b{ color:var(--fg); font-weight:500; }
+.panel .when{ font-family:var(--font-mono); font-size:11px; color:var(--fg-faint); }
+.panel .blurb{ font-size:14px; line-height:1.6; color:var(--fg); }
+.panel .section-label{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--fg-faint);
+  margin-top:4px;
+}
+.tag-row{ display:flex; flex-wrap:wrap; gap:6px; }
+.tag{
+  font-family:var(--font-mono);
+  font-size:11px;
+  padding:4px 9px;
+  border-radius:6px;
+  background:var(--bg-elev-2);
+  border:1px solid var(--line);
+  color:var(--fg-dim);
+}
+.tag.cat{
+  color:var(--bg);
+  border-color:transparent;
+  font-weight:500;
+  cursor:pointer;
+}
+
+.related-list{ display:flex; flex-direction:column; gap:6px; }
+.related-btn{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  font-family:var(--font-ui);
+  font-size:13px;
+  color:var(--fg);
+  background:var(--bg-elev-2);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:9px 11px;
+  cursor:pointer;
+  transition:border-color .15s, transform .15s;
+}
+.related-btn:hover{ border-color:var(--fg-faint); transform:translateX(2px); }
+.related-btn .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+.related-btn .meta{ color:var(--fg-faint); font-family:var(--font-mono); font-size:10.5px; margin-left:auto; white-space:nowrap; }
+
+.empty-panel{
+  color:var(--fg-faint);
+  font-size:13px;
+  line-height:1.6;
+}
+
+@media (max-width: 640px){
+  header p{ display:none; }
+  .legend{ bottom: max(14px, env(safe-area-inset-bottom,0px)); }
+}
+</style>
+</head>
+<body>
+
+<div class="ui">
+  <header>
+    <h1>research <em>galaxy</em></h1>
+    <p id="headerBlurb"></p>
+    <div class="hint">drag a star · hover for a peek · click to pin it and read the full story</div>
+    <div class="controls">
+      <div class="lens-switch">
+        <button class="pill-btn active" data-lens="discipline">by discipline</button>
+        <button class="pill-btn" data-lens="approach">by approach</button>
+      </div>
+      <button class="pill-btn ghost" data-action="reset" style="margin-left:auto;">reset view</button>
+    </div>
+  </header>
+</div>
+
+<div class="stage" id="stage"></div>
+
+<div class="legend" id="legend"></div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="panel" id="panel">
+  <button class="panel-close" id="panelClose">&times;</button>
+  <div id="panelBody" class="empty-panel">select a star to read its story.</div>
+</div>
+
+<script>
+(function(){
+
+/* ---------------------------------------------------------------
+   data
+----------------------------------------------------------------- */
+
+const disciplineDefs = [
+  { id:'cat-genomics',    label:'genomics & bioinformatics',      color:'var(--c-genomics)',   desc:'RNA-seq, variant calling, and pipeline engineering for sequencing data.' },
+  { id:'cat-imaging',     label:'imaging & pathology',            color:'var(--c-imaging)',    desc:'Histopathology, MRI, and image segmentation pipelines.' },
+  { id:'cat-survival',    label:'survival analysis',              color:'var(--c-survival)',   desc:'Cox models, landmark analysis, and time-to-event methods.' },
+  { id:'cat-statsepi',    label:'statistics & epidemiology',      color:'var(--c-statsepi)',   desc:'Hypothesis testing, causal and epidemiologic methods.' },
+  { id:'cat-ml',          label:'machine learning',               color:'var(--c-ml)',         desc:'Predictive modeling, evaluation, and interpretation.' },
+  { id:'cat-systems',     label:'systems & mechanistic modeling', color:'var(--c-systems)',    desc:'ODEs/PDEs, agent-based models, Boolean networks.' },
+  { id:'cat-dataeng',     label:'data engineering',               color:'var(--c-dataeng)',    desc:'SQL, pipelines, and large cohort data wrangling.' },
+  { id:'cat-structural',  label:'structural biology',             color:'var(--c-structural)', desc:'Molecular docking and structure visualization.' },
+  { id:'cat-clinical',    label:'clinical',                       color:'var(--c-clinical)',   desc:'Patient assessment and clinical chart review.' },
+  { id:'cat-scicomm',     label:'science communication',          color:'var(--c-scicomm)',    desc:'Literature review and public-facing science writing.' },
+];
+
+const approachDefs = [
+  { id:'app-eda',        label:'eda & preprocessing',    color:'var(--c-eda)',        desc:'Curating and exploring data — imputation, deconvolution, cohort assembly — before any modeling starts.' },
+  { id:'app-feateng',    label:'feature engineering',    color:'var(--c-feateng)',    desc:'Turning raw variables into model-ready features, grouped and scoped to avoid leakage.' },
+  { id:'app-stats',      label:'statistical testing',    color:'var(--c-stats)',      desc:'Hypothesis tests and correction for multiple comparisons, not just a single reported p-value.' },
+  { id:'app-validation', label:'validation & leakage control', color:'var(--c-validation)', desc:'External or held-out validation, frozen train-only thresholds, and preregistered negative controls.' },
+  { id:'app-interp',     label:'interpretation',         color:'var(--c-interp)',     desc:'Explaining what a model actually learned and connecting it back to the domain.' },
+  { id:'app-usability',  label:'real-world usability',   color:'var(--c-usability)',  desc:'Shipping something others can run — a CLI, a containerized pipeline, an interoperable export.' },
+];
+
+const entries = [
+  { id:'exp-ccmcai', name:'Student Researcher',
+    org:'Center for Computational Medicine & Clinical AI, UChicago', who:'PI: Dr. Madeleine Torcasso', when:'May–Aug 2026',
+    blurb:'Built a containerized Nextflow/Python pipeline for prostate histopathology — color deconvolution, Cellpose nuclear segmentation, and shape features — then analyzed pathomic and co-registered MRI features across 73 regions, discriminating cancer from benign tissue with AUCs up to 0.97.',
+    tools:['Nextflow','Python','Cellpose','Mann–Whitney U','Benjamini–Hochberg FDR','Spearman correlation'],
+    cats:['cat-imaging','cat-statsepi','cat-dataeng'],
+    approach:['app-eda','app-stats','app-usability'] },
+
+  { id:'exp-componc', name:'Bioinformatics Programmer',
+    org:'Computational Oncology Unit, UChicago Comprehensive Cancer Center', who:'Directors: Ahmed Fadiel & Kunle Odunsi', when:'Apr–Aug 2026',
+    blurb:'Built a Python/R survival pipeline for a 203-patient glioma MRI cohort (594 scans), reconstructing tumor volumes from NIfTI masks and using left-truncated Cox and landmark models — current tumor burden predicted survival at HR 1.85 at nine months. Also advised on a web RNA-seq platform and a review of agentic AI in prostate cancer.',
+    tools:['Python','R','Cox regression','Landmark models','NIfTI','RNA-seq'],
+    cats:['cat-survival','cat-genomics','cat-clinical'],
+    approach:['app-validation','app-interp'] },
+
+  { id:'exp-iisc', name:'Undergraduate Thesis Researcher',
+    org:'Cancer Systems Biology Lab, IISc Bangalore', who:'PI: Dr. Mohit Kumar Jolly', when:'Jan–May 2025',
+    blurb:'Developed two 2D agent-based models in R simulating epithelial–mesenchymal spatial dynamics with Gillespie stochastic simulation and Gaussian-weighted interaction fields — epithelial cells overcame crowding inhibition to outcompete mesenchymal cells.',
+    tools:['R','Agent-based modeling','Gillespie SSA'],
+    cats:['cat-systems'],
+    approach:[] },
+
+  { id:'exp-amgen', name:'Amgen Foundation Scholar',
+    org:'School of Pharmaceutical Sciences, Tsinghua University', who:'PI: Dr. Haidong Tang', when:'Jun–Aug 2024',
+    blurb:'Analyzed PD-L1 knockout RNA-seq from MDA-MB-231 cells, identifying 306 ferroptosis-related differentially expressed genes and 10 hub genes. Ran survival, miRNA, and drug-signature analyses, and supported PD-L1 knockdown with shRNA and FACS validation.',
+    tools:['R','RNA-seq','Enrichr','Cytoscape','Survival analysis'],
+    cats:['cat-genomics','cat-survival','cat-clinical'],
+    approach:['app-stats','app-interp'] },
+
+  { id:'exp-iitb', name:'Summer Intern',
+    org:'Biomolecular Engineering Lab, IIT Bombay', who:'PI: Dr. Ganesh A. Viswanathan', when:'Jun–Aug 2023',
+    blurb:'Built a Boolean network model of TNF-induced cell death spanning 32 species and 21 reactions, then simulated three targeted inhibitors in CellNetAnalyzer/MATLAB — all three were needed together to prevent cell death.',
+    tools:['MATLAB','CellNetAnalyzer','Boolean networks'],
+    cats:['cat-systems'],
+    approach:[] },
+
+  { id:'exp-mosaic', name:'Research Intern',
+    org:'Molecular Omics, Structure & Image Computing Lab, Plaksha University', who:'PI: Dr. Monika Sharma', when:'Aug–Sep 2022',
+    blurb:'Investigated protein–ligand binding for HDAC2, HDAC8, COX1, and COX2 using SAHA as the ligand — docked with AutoDock Vina and examined stable complexes and binding poses in PyMOL.',
+    tools:['AutoDock Vina','PyMOL'],
+    cats:['cat-structural'],
+    approach:[] },
+
+  { id:'exp-dtsa', name:'Research Intern',
+    org:'Diagnostics & Therapeutics for Sustainable Agriculture, Plaksha University', who:'PI: Dr. Navjot Kaur', when:'May–Nov 2022',
+    blurb:'Reviewed CRISPR biology and its agricultural applications, researching the ecological impact, public perception, and regulatory frameworks of CRISPR crops. Authored a popular science article in The Morung Express.',
+    tools:['Literature review','Science writing'],
+    cats:['cat-scicomm','cat-genomics'],
+    approach:[] },
+
+  { id:'exp-artemis', name:'Student Intern',
+    org:'Stroke & Neurointervention Unit, Artemis Agrim Institute of Neurosciences', who:null, when:'2020',
+    blurb:'Supported tele-consultations for 46 post-stroke patients during COVID-19 using Barthel Index and PHQ-9 assessments, then helped identify common risk factors and awareness gaps for a poster on bedside-to-practice translation.',
+    tools:['Barthel Index','PHQ-9','Clinical assessment'],
+    cats:['cat-clinical'],
+    approach:[] },
+
+  { id:'proj-scperturbeval', name:'scPerturbEval',
+    org:'The University of Chicago', who:'Dr. Aly Khan', when:null,
+    blurb:'A modular Python CLI for evaluating single-cell perturbation prediction models across more than 15 metrics, spanning raw, PCA, and differential-expression spaces. A distributional flow-matching model matched, but did not outperform, a simple additive baseline under four-fold cross-validation.',
+    tools:['Python','CLI','PCA','Pathway enrichment','Cross-validation'],
+    cats:['cat-ml','cat-genomics','cat-statsepi'],
+    approach:['app-validation','app-usability'] },
+
+  { id:'proj-medicare', name:'Medicare Claims Risk Stratification',
+    org:'Independent project', who:null, when:null,
+    blurb:'A SQL/DuckDB and Python pipeline on 52,375 synthetic Medicare members, engineering 27 utilization and chronic-condition features. XGBoost and LightGBM predicted next-year high-cost membership at AUROC 0.72; SHAP explained the model, and targeting the top 1% captured 2.0× more spending than a prior-year heuristic.',
+    tools:['SQL','DuckDB','XGBoost','LightGBM','SHAP','FHIR R4'],
+    cats:['cat-ml','cat-dataeng','cat-clinical'],
+    approach:['app-feateng','app-validation','app-interp','app-usability'] },
+
+  { id:'proj-aml', name:'AML Genomics',
+    org:'Independent project', who:null, when:null,
+    blurb:'Patient-grouped elastic-net models predicting FLT3-ITD and NPM1 mutations from RNA-seq, externally validated without refitting on 151 TCGA-LAML patients (AUROC 0.873 / 0.964). A Nextflow pipeline recovered a 30-bp FLT3-ITD and two canonical gene fusions, with a preregistered negative control.',
+    tools:['Nextflow','Elastic net','samtools','kallisto','Pizzly'],
+    cats:['cat-genomics','cat-ml','cat-dataeng'],
+    approach:['app-feateng','app-validation','app-usability'] },
+
+  { id:'proj-pm25', name:'Air Pollution & Type 2 Diabetes',
+    org:'The University of Chicago', who:'Dr. Briseis Aschebrook-Kilfoy', when:null,
+    blurb:'Curated coded electronic health records for 211,618 All of Us participants in BigQuery, using MICE for multiple imputation. Stratified Cox regression and quantile g-computation linked PM2.5 sulfate and sea-salt components to incident type 2 diabetes risk.',
+    tools:['SQL','BigQuery','MICE','Cox regression','Quantile g-computation'],
+    cats:['cat-statsepi','cat-dataeng'],
+    approach:['app-eda','app-stats'] },
+
+  { id:'proj-algae', name:'Microalgal Photosynthesis Modeling',
+    org:'Plaksha University', who:'Dr. Saikat Chakraborty', when:null,
+    blurb:'A multi-scale mechanistic model of Chlorella sorokiniana photosynthesis across micro, meso, and macro scales — ODEs for reaction kinetics and reaction–diffusion PDEs for proton transport, reduced via the method of lines and solved in MATLAB.',
+    tools:['MATLAB','ODEs','Reaction–diffusion PDEs','Method of lines','ode45 / pdepe'],
+    cats:['cat-systems'],
+    approach:[] },
+
+  { id:'proj-libraryrec', name:'Library Recommendation System',
+    org:'Plaksha University', who:'Dr. Siddharth S', when:null,
+    blurb:'A hybrid content-based and collaborative-filtering recommender built over more than 7,000 library transactions, covering scraping, preprocessing, and evaluation end to end. Optimizing SVD and KNN cut prediction error by 28% (RMSE 0.45).',
+    tools:['Python','Recommendation systems','SVD','KNN'],
+    cats:['cat-ml','cat-dataeng'],
+    approach:['app-feateng','app-validation'] },
+];
+
+const entryById = Object.fromEntries(entries.map(e=>[e.id,e]));
+
+const HEADER_TEXT = {
+  discipline: 'every project and research role i’ve worked on, pulled into orbit by the disciplines they share. the brighter suns are the fields i return to most.',
+  approach:   'the same work, regrouped by how it actually got done — the stages i consistently reach for on a real project, from first look at the data to something someone else can run.',
+};
+
+/* resolve css-var colors to literal hex once, for d3/svg use */
+const probe = document.createElement('div');
+document.body.appendChild(probe);
+function resolveColor(cssVar){
+  probe.style.color = cssVar;
+  return getComputedStyle(probe).color;
+}
+[...disciplineDefs, ...approachDefs].forEach(c=>{ c.hex = resolveColor(c.color); });
+const lineHex = resolveColor('var(--line)');
+const edgeHex = resolveColor('var(--edge)');
+const starHex = resolveColor('var(--star)');
+probe.remove();
+
+/* ---------------------------------------------------------------
+   svg scaffold (built once; contents rebuilt per lens)
+----------------------------------------------------------------- */
+const stage = document.getElementById('stage');
+const W = 1400, H = 900;
+
+const svg = d3.select(stage).append('svg')
+  .attr('viewBox', [0,0,W,H])
+  .attr('preserveAspectRatio','xMidYMid meet');
+
+const svgDefs = svg.append('defs');
+const glow = svgDefs.append('filter').attr('id','starGlow').attr('x','-200%').attr('y','-200%').attr('width','500%').attr('height','500%');
+glow.append('feGaussianBlur').attr('stdDeviation', 3.4).attr('result','blur');
+glow.append('feMerge').html('<feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/>');
+
+const zoomLayer = svg.append('g');
+const zoomBehavior = d3.zoom()
+  .scaleExtent([0.4, 3.2])
+  .on('zoom', (ev)=>{ zoomLayer.attr('transform', ev.transform); });
+svg.call(zoomBehavior).on('dblclick.zoom', null);
+
+const linkG = zoomLayer.append('g').attr('class','links');
+const nodeG = zoomLayer.append('g').attr('class','nodes');
+
+svg.on('click', ()=>{ pinned = null; applyHighlight(); closePanel(); });
+
+const headerEl = document.querySelector('header');
+const headerBlurb = document.getElementById('headerBlurb');
+const legendEl = document.getElementById('legend');
+const tooltip = document.getElementById('tooltip');
+const panel = document.getElementById('panel');
+const panelBody = document.getElementById('panelBody');
+
+let currentLens = 'discipline';
+let defs = disciplineDefs;
+let key = 'cats';
+let nodes = [], links = [], nodesById = {}, neighborMap = new Map();
+let nodeSel, linkSel, sim;
+let pinned = null;
+let topBound=140, bottomBound=H-120, leftBound=60, rightBound=W-60;
+
+/* ---------------------------------------------------------------
+   bounds: keep the graph clear of the header / legend chrome
+----------------------------------------------------------------- */
+function computeBounds(){
+  const stageRect = stage.getBoundingClientRect();
+  if (!stageRect.width || !stageRect.height) return;
+  const scale = Math.min(stageRect.width / W, stageRect.height / H) || 1;
+  const headerH = headerEl.getBoundingClientRect().height;
+  const legendH = legendEl.getBoundingClientRect().height;
+  topBound = (headerH + 28) / scale;
+  bottomBound = H - (legendH + 28) / scale;
+  leftBound = 60;
+  rightBound = W - 60;
+}
+
+/* ---------------------------------------------------------------
+   build + render one lens
+----------------------------------------------------------------- */
+function buildLens(lens){
+  const useDefs = lens === 'discipline' ? disciplineDefs : approachDefs;
+  const useKey  = lens === 'discipline' ? 'cats' : 'approach';
+
+  const catNodes = useDefs.map(c=>{
+    const degree = entries.filter(e=>(e[useKey]||[]).includes(c.id)).length;
+    return { id:c.id, kind:'category', data:c, degree, r: 13 + degree*3.4 };
+  });
+  const entryNodes = entries.map(e=>({
+    id:e.id, kind:'entry', data:e, degree:(e[useKey]||[]).length, r:8
+  }));
+  const linkList = [];
+  entries.forEach(e=>{
+    (e[useKey]||[]).forEach(cid=> linkList.push({ source:e.id, target:cid }));
+  });
+
+  const nbMap = new Map();
+  [...catNodes, ...entryNodes].forEach(n=>nbMap.set(n.id, new Set([n.id])));
+  linkList.forEach(l=>{
+    nbMap.get(l.source).add(l.target);
+    nbMap.get(l.target).add(l.source);
+  });
+
+  return { defs:useDefs, key:useKey, nodes:[...catNodes, ...entryNodes], links:linkList, neighborMap:nbMap };
+}
+
+function renderLens(lens, animate){
+  currentLens = lens;
+  const built = buildLens(lens);
+  defs = built.defs; key = built.key;
+  nodes = built.nodes; links = built.links; neighborMap = built.neighborMap;
+  nodesById = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  pinned = null;
+
+  headerBlurb.textContent = HEADER_TEXT[lens];
+
+  if (sim) sim.stop();
+  linkG.selectAll('*').remove();
+  nodeG.selectAll('*').remove();
+  closePanel();
+
+  linkSel = linkG.selectAll('line')
+    .data(links)
+    .join('line')
+    .attr('stroke', edgeHex)
+    .attr('stroke-width', 1.6)
+    .attr('stroke-linecap', 'round')
+    .style('opacity', 0.6);
+
+  nodeSel = nodeG.selectAll('g.node')
+    .data(nodes)
+    .join('g')
+    .attr('class', d=> 'node node-' + d.kind)
+    .style('cursor', 'pointer');
+
+  nodeSel.each(function(d){
+    const g = d3.select(this);
+    if (d.kind === 'category'){
+      g.append('circle')
+        .attr('class','ring')
+        .attr('r', d.r)
+        .attr('fill', d.data.hex)
+        .attr('fill-opacity', 0.16)
+        .attr('stroke', d.data.hex)
+        .attr('stroke-width', 1.4)
+        .attr('filter','url(#starGlow)');
+      g.append('circle')
+        .attr('r', 2.6)
+        .attr('fill', d.data.hex);
+    } else {
+      g.append('circle')
+        .attr('class','star')
+        .attr('r', d.r)
+        .attr('fill', starHex)
+        .attr('fill-opacity', 0.9)
+        .attr('filter','url(#starGlow)');
+    }
+  });
+
+  nodeG.selectAll('g.node-category').append('text')
+    .text(d=>d.data.label)
+    .attr('y', d=> -(d.r + 8))
+    .attr('text-anchor','middle')
+    .attr('fill', d=>d.data.hex)
+    .attr('font-family', "'IBM Plex Mono', monospace")
+    .attr('font-size', 10.5)
+    .attr('letter-spacing', '.02em')
+    .style('pointer-events','none')
+    .style('text-shadow','0 2px 8px rgba(0,0,0,.8)');
+
+  computeBounds();
+
+  sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d=>d.id).distance(d=>{
+      const a = typeof d.source === 'object' ? d.source : nodesById[d.source];
+      const b = typeof d.target === 'object' ? d.target : nodesById[d.target];
+      return 58 + (a.r||8) + (b.r||8);
+    }).strength(0.75))
+    .force('charge', d3.forceManyBody().strength(d=> d.kind==='category' ? -420 : -170))
+    .force('center', d3.forceCenter((leftBound+rightBound)/2, (topBound+bottomBound)/2))
+    .force('collide', d3.forceCollide().radius(d=> d.r + (d.kind==='category'?16:10)))
+    .on('tick', ticked);
+
+  wireInteraction();
+
+  if (animate){ sim.alpha(1).restart(); } else { sim.alpha(1).restart(); }
+}
+
+function ticked(){
+  nodes.forEach(d=>{
+    const pad = d.r || 8;
+    d.x = Math.max(leftBound+pad, Math.min(rightBound-pad, d.x));
+    d.y = Math.max(topBound+pad, Math.min(bottomBound-pad, d.y));
+  });
+  linkSel
+    .attr('x1', d=>d.source.x).attr('y1', d=>d.source.y)
+    .attr('x2', d=>d.target.x).attr('y2', d=>d.target.y);
+  nodeSel.attr('transform', d=>`translate(${d.x},${d.y})`);
+}
+
+window.addEventListener('resize', ()=>{
+  computeBounds();
+  if (sim){
+    sim.force('center', d3.forceCenter((leftBound+rightBound)/2, (topBound+bottomBound)/2));
+    sim.alpha(0.3).restart();
+  }
+});
+
+/* ---------------------------------------------------------------
+   interaction — hover is a lightweight peek; click is the
+   deliberate action that pins the connections and opens the panel
+----------------------------------------------------------------- */
+function applyHighlight(){
+  const neighbors = pinned ? neighborMap.get(pinned) : null;
+  nodeSel.transition().duration(180).style('opacity', d=> !neighbors ? 1 : (neighbors.has(d.id) ? 1 : 0.12));
+  linkSel.transition().duration(180).style('opacity', d=>{
+    const s = d.source.id||d.source, t = d.target.id||d.target;
+    if (!neighbors) return 0.6;
+    return (neighbors.has(s) && neighbors.has(t)) ? 0.95 : 0.05;
+  });
+}
+
+function wireInteraction(){
+  nodeSel
+    .on('mouseenter', function(ev,d){
+      d3.select(this).style('filter','brightness(1.35)');
+      const label = d.kind==='category' ? d.data.label : d.data.name;
+      const meta = d.kind==='category' ? d.data.desc : [d.data.org, d.data.when].filter(Boolean).join(' · ');
+      const hint = d.kind==='category' ? `${d.degree} connected` : 'click to pin + read more';
+      tooltip.innerHTML = `<div class="t-title">${label}</div><div class="t-meta">${meta}</div><div class="t-hint">${hint}</div>`;
+      tooltip.style.opacity = 1;
+    })
+    .on('mousemove', (ev)=>{
+      tooltip.style.left = (ev.clientX + 16) + 'px';
+      tooltip.style.top = (ev.clientY + 16) + 'px';
+    })
+    .on('mouseleave', function(){
+      d3.select(this).style('filter', null);
+      tooltip.style.opacity = 0;
+    })
+    .on('click', (ev,d)=>{
+      ev.stopPropagation();
+      selectNode(d);
+    });
+
+  nodeSel.call(
+    d3.drag()
+      .on('start', (ev,d)=>{ if(!ev.active) sim.alphaTarget(0.25).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag', (ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
+      .on('end', (ev,d)=>{ if(!ev.active) sim.alphaTarget(0); d.fx=null; d.fy=null; })
+  );
+}
+
+function selectNode(d){
+  pinned = d.id;
+  applyHighlight();
+  if (d.kind === 'entry') openEntryPanel(d.data);
+  else openCategoryPanel(d);
+  refreshLegendSelection();
+}
+
+/* ---------------------------------------------------------------
+   legend (rebuilt per lens)
+----------------------------------------------------------------- */
+function renderLegend(){
+  legendEl.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexWrap = 'wrap';
+  wrap.style.gap = '7px';
+  defs.forEach(c=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.id = c.id;
+    chip.style.color = c.hex;
+    chip.innerHTML = `<span class="dot" style="background:${c.hex}"></span>${c.label}`;
+    chip.addEventListener('click', ()=>{
+      const node = nodesById[c.id];
+      if (pinned === c.id){ pinned = null; applyHighlight(); closePanel(); refreshLegendSelection(); }
+      else selectNode(node);
+    });
+    wrap.appendChild(chip);
+  });
+  legendEl.appendChild(wrap);
+  computeBounds();
+  if (sim){
+    sim.force('center', d3.forceCenter((leftBound+rightBound)/2, (topBound+bottomBound)/2));
+    sim.alpha(0.6).restart();
+  }
+}
+function refreshLegendSelection(){
+  document.querySelectorAll('.chip').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.id === pinned);
+  });
+}
+
+/* ---------------------------------------------------------------
+   detail panel — entries show their full story; categories show
+   their description plus a clickable list of everything in them
+----------------------------------------------------------------- */
+document.getElementById('panelClose').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  pinned = null;
+  applyHighlight();
+  refreshLegendSelection();
+  closePanel();
+});
+
+function openEntryPanel(d){
+  const catChips = (d[key]||[]).map(cid=>{
+    const c = defs.find(x=>x.id===cid);
+    return c ? `<span class="tag cat" style="background:${c.hex}" data-id="${c.id}">${c.label}</span>` : '';
+  }).join('');
+  const toolChips = d.tools.map(t=>`<span class="tag">${t}</span>`).join('');
+  const metaLine = [d.who, d.when].filter(Boolean).join(' · ');
+
+  const isProject = d.id.indexOf('proj-') === 0;
+  const title = isProject ? `Project: ${d.name}` : d.name;
+
+  panelBody.className = '';
+  panelBody.innerHTML = `
+    <div class="panel-kicker">${currentLens === 'discipline' ? 'disciplines' : 'approach'}</div>
+    <h2>${title}</h2>
+    <div class="org">${d.org ? `<b>${d.org}</b>` : ''}${metaLine ? `<div class="when">${metaLine}</div>` : ''}</div>
+    <div class="blurb">${d.blurb}</div>
+    <div class="section-label">${currentLens === 'discipline' ? 'disciplines' : 'approach stages'}</div>
+    <div class="tag-row" id="panelCatRow">${catChips || '<span class="tag">not strongly tied to a stage here</span>'}</div>
+    <div class="section-label">tools & methods</div>
+    <div class="tag-row">${toolChips}</div>
+  `;
+  panel.classList.add('open');
+  const row = document.getElementById('panelCatRow');
+  if (row) row.querySelectorAll('.tag.cat').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const node = nodesById[el.dataset.id];
+      if (node) selectNode(node);
+    });
+  });
+}
+
+function openCategoryPanel(d){
+  const related = entries.filter(e=>(e[key]||[]).includes(d.id));
+  const list = related.map(e=>`
+    <button class="related-btn" data-id="${e.id}">
+      <span class="dot" style="background:${d.data.hex}"></span>
+      ${e.id.indexOf('proj-') === 0 ? `Project: ${e.name}` : e.name}
+      <span class="meta">${e.when || ''}</span>
+    </button>
+  `).join('');
+
+  panelBody.className = '';
+  panelBody.innerHTML = `
+    <div class="panel-kicker">${currentLens === 'discipline' ? 'discipline' : 'approach stage'}</div>
+    <h2>${d.data.label}</h2>
+    <div class="blurb">${d.data.desc}</div>
+    <div class="section-label">connected work (${related.length})</div>
+    <div class="related-list">${list || '<span class="tag">nothing tagged here yet</span>'}</div>
+  `;
+  panel.classList.add('open');
+  panelBody.querySelectorAll('.related-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const node = nodesById[btn.dataset.id];
+      if (node) selectNode(node);
+    });
+  });
+}
+
+function closePanel(){ panel.classList.remove('open'); }
+
+/* ---------------------------------------------------------------
+   controls: lens switch + reset
+----------------------------------------------------------------- */
+document.querySelectorAll('.lens-switch .pill-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const lens = btn.dataset.lens;
+    if (lens === currentLens) return;
+    document.querySelectorAll('.lens-switch .pill-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    renderLens(lens, true);
+    renderLegend();
+  });
+});
+
+document.querySelector('[data-action="reset"]').addEventListener('click', ()=>{
+  pinned = null;
+  closePanel();
+  svg.transition().duration(400).call(zoomBehavior.transform, d3.zoomIdentity);
+  renderLens(currentLens, true);
+  renderLegend();
+});
+
+/* ---------------------------------------------------------------
+   boot
+----------------------------------------------------------------- */
+renderLens('discipline', false);
+renderLegend();
+
+})();
+</script>
+</body>
+</html>

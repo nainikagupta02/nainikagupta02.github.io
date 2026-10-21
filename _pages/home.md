@@ -14,6 +14,16 @@ I’d love to connect! Find me on [LinkedIn](https://www.linkedin.com/in/nainika
 
 Here I’ve documented my professional [experience]({{ '/experience/' | relative_url }}), some [projects]({{ '/projects/' | relative_url }}) I’ve worked on, and what I’ve been doing [beyond research]({{ '/beyond-research/' | relative_url }}). I’m also sharing [notes on ml and mlops]({{ '/notes/' | relative_url }}).
 
+## Explore my work
+
+An interactive map of every project and research role below, grouped either by discipline or by how the work actually gets done — drag a star, hover for a peek, click to read the full story.
+
+<div style="margin: 1.5em 0; border-radius: 12px; overflow: hidden; border: 1px solid #2a3150;">
+  <iframe src="{{ '/assets/galaxy/' | relative_url }}" style="width: 100%; height: 640px; display: block; border: 0;" loading="lazy" title="Research galaxy — an interactive map of my projects and research experience"></iframe>
+</div>
+
+<p style="font-size: 0.85em; margin-top: -0.75em; color: #767676;">Having trouble viewing it here? <a href="{{ '/assets/galaxy/' | relative_url }}" target="_blank" rel="noopener">Open it full-screen</a>.</p>
+
 ## Tools I work with
 
 **Data science:** Python, R, SQL, MATLAB, BigQuery, DuckDB, machine learning, and survival analysis.
