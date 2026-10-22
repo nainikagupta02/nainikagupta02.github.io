@@ -17,6 +17,8 @@ title: "orchestration & continuous training"
 |---|---|---|
 | nextflow | a workflow engine connecting processes and their inputs/outputs | coordinate bioinformatics tasks with containerised tools |
 | prefect | a python workflow orchestration framework with tracked flows and tasks | coordinate python data and training steps with observable run state |
+| airflow | a workflow scheduler that organises tasks into dags, with a web ui for monitoring and retrying runs | coordinate scheduled or event-triggered pipelines across heterogeneous systems and teams |
+| aws step functions | a managed state-machine service that coordinates aws services and lambda functions from a json-based workflow definition | orchestrate a serverless pipeline that stays entirely within aws, such as ingest → validate → score |
 | slurm | a cluster workload manager and scheduler | allocate resources to submitted tasks |
 | subprocess | python’s interface for launching external commands | implement the small sequential runner below |
 
@@ -24,7 +26,37 @@ title: "orchestration & continuous training"
 
 - nextflow processes define task execution and data connections [process guide](https://docs.seqera.io/nextflow/process)
 - in prefect, a flow coordinates work while tasks support tracked execution and configurable retries [flows](https://docs.prefect.io/v3/concepts/flows), [tasks](https://docs.prefect.io/v3/concepts/tasks)
+- airflow's scheduler evaluates dags and launches due tasks; its ui is useful for seeing run history and failure points across many pipelines at once [airflow scheduler](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/scheduler.html)
+- a step functions state machine is defined in amazon states language (asl), a json format describing states, transitions, and error handling; aws runs and tracks the execution for you [states language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html)
 - slurm schedules compute; the workflow engine still decides task dependencies and downstream execution
+
+## triggering a run from new data
+
+- an event-driven trigger starts a workflow because something happened, rather than waiting on a fixed schedule — a file landing in object storage is a common trigger for a batch pipeline
+- in aws, an s3 event notification fires when an object is created in a bucket (or a prefix within one); it can invoke a lambda function directly, or publish to sns/sqs/eventbridge for other services to pick up [s3 event notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html)
+- a common pattern: `s3 put → lambda → start a step functions execution` (or trigger an airflow dag run through its api); the lambda's job is to validate the event and kick off the real workflow, not to do the processing itself
+- a lambda function is a small, stateless piece of code that runs in response to an event without you managing a server; use it for short glue logic like this trigger, not for long training or batch jobs [lambda overview](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+
+```python
+# illustrative lambda handler — reacts to an s3 put event and starts a step functions execution
+import json
+import boto3
+
+sfn = boto3.client("stepfunctions")
+
+def handler(event, context):
+    record = event["Records"][0]["s3"]
+    bucket = record["bucket"]["name"]
+    key = record["object"]["key"]
+    sfn.start_execution(
+        stateMachineArn="arn:aws:states:us-east-1:123456789012:stateMachine:qc-pipeline",
+        input=json.dumps({"bucket": bucket, "key": key}),
+    )
+```
+
+- boto3 is the aws python sdk; use it to call aws services such as s3, lambda, step functions, and sagemaker from python code [boto3 documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- keep the trigger idempotent: the same object landing twice, such as a retried upload, should not corrupt downstream state — check an output marker or the object's version id before reprocessing
+- airflow and prefect both support starting a run from an external event through sensors or their api, rather than only from a schedule, if a dag-based orchestrator fits the rest of the system better than step functions [airflow scheduling](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/scheduler.html), [prefect deployments](https://docs.prefect.io/v3/concepts/deployments)
 
 ## start with a local runner
 

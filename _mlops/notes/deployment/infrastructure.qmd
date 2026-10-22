@@ -29,6 +29,39 @@ title: "cloud infrastructure & scaling"
 - vertical scaling increases resources for one instance; horizontal scaling adds instances, or replicas
 - autoscaling adjusts replica counts or resources using configured signals; kubernetes’ horizontal pod autoscaler can adjust replica counts from observed metrics [autoscaling guide](https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/)
 
+## aws building blocks
+
+::: {.table-responsive tabindex="0"}
+
+| service | what it is | ml use case |
+|---|---|---|
+| s3 | object storage, organised into buckets and object keys | store raw data, versioned datasets, model artifacts, and reports |
+| lambda | a serverless function that runs in response to an event, with no server to manage | lightweight glue logic — react to an s3 upload, validate a payload, trigger a pipeline |
+| ec2 | a virtual machine you provision and manage yourself | run training jobs or services that need full control over the os and installed software |
+| ecs | a managed service for running containers, on ec2 instances or on fargate (serverless containers) | run a containerised inference api or batch job without managing a container orchestrator yourself |
+| sagemaker | a managed ml platform covering training, batch transform, and real-time endpoints | train and deploy models without assembling ec2/ecs/s3 plumbing by hand |
+
+:::
+
+- a bucket is a top-level s3 container; a key is an object's full path within it; enabling versioning on a bucket keeps every object revision instead of overwriting in place [s3 versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html)
+- ec2 and ecs sit at different points on the same tradeoff as kubernetes vs. a single host above: ec2 gives full control at the cost of managing everything yourself, ecs/fargate removes server management for containerised workloads, and sagemaker removes the deployment plumbing too, at the cost of less control over the serving stack
+- default to ecs/fargate or sagemaker over raw ec2 unless something concrete requires direct os-level access — most training and serving workloads don't
+
+## batch vs. real-time, on aws specifically
+
+- sagemaker batch transform runs a model against a stored dataset and writes predictions back to s3 — the managed-service version of the [batch inference](../packaging-serving/serving.qmd) pattern, without provisioning and tearing down compute yourself [batch transform](https://docs.aws.amazon.com/sagemaker/latest/dg/batch-transform.html)
+- a sagemaker real-time endpoint keeps a model loaded behind a managed http endpoint and auto-scales instance count with traffic; use it for the same case as [online inference](../packaging-serving/serving.qmd) generally — a caller needs a result back within the request
+- a lambda function can serve a small model directly, without sagemaker, when cold-start latency (the delay before a fresh lambda instance is ready) is acceptable for the use case
+- choosing between these is still the same question as batch vs. real-time anywhere: does a caller need this prediction back within one request, or can predictions be produced on a schedule and looked up later
+
+## spark & databricks
+
+- apache spark is a distributed data-processing engine; it partitions a dataset across a cluster so transformations run in parallel, useful once data no longer fits comfortably in memory on one machine [spark overview](https://spark.apache.org/docs/latest/)
+- a spark dataframe looks similar to a pandas dataframe, but its operations are lazy — spark builds a plan and only executes it when an action such as writing output or counting rows is requested, rather than running each line eagerly
+- databricks is a managed platform built around spark, adding a notebook environment, cluster management, and mlflow integration on top [databricks overview](https://docs.databricks.com/en/getting-started/overview.html)
+- databricks ships mlflow natively, so the [experiment tracking](../experiments/tracking.qmd) and [model registry](../experiments/registry.qmd) patterns covered earlier work the same way there, pointed at a managed tracking server instead of a local sqlite file
+- reach for spark or databricks once ingestion or feature engineering genuinely needs distributed processing; a dataset that fits comfortably in pandas on one machine doesn't need it, and adding it earlier than necessary trades simplicity for operational complexity with no benefit
+
 ## a local service configuration
 
 - [download the deployment exercise](../../examples/deployment-demo.zip), which includes the earlier synthetic model and serving code

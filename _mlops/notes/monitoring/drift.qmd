@@ -47,4 +47,27 @@ print({"ks_statistic": float(result.statistic), "pvalue": float(result.pvalue),
 - identify affected features and groups, inspect pipeline changes, and compare model quality when labels mature
 - a drift flag can lead to a pipeline fix, more investigation, or retraining; it does not automatically approve a replacement
 
+## log results so trends are visible over time
+
+- a single drift check answers "is this batch different from the reference"; logging every batch's results to the same place turns that into a trend you can see change gradually, not just a one-off alert
+- mlflow isn't only for training runs — the same [tracking api](../experiments/tracking.qmd) can log a monitoring or qc check as its own run, with the batch/window identifier as a tag so related checks can be queried together
+
+```python
+import mlflow
+
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_experiment("drift-monitoring")
+with mlflow.start_run(run_name=f"batch-{batch_id}"):
+    mlflow.set_tags({"batch_id": batch_id, "reference_version": reference_version})
+    mlflow.log_metrics({
+        "ks_statistic": float(result.statistic),
+        "ks_pvalue": float(result.pvalue),
+        "missing_fraction": float(current.isna().mean()),
+    })
+```
+
+- querying this experiment's runs over time — through the mlflow ui or `mlflow.search_runs` — gives the trend line a single alert can't: whether a statistic is drifting gradually, jumped once, or oscillates with a known cycle
+- keep this separate from the training-run experiment used in [experiment tracking](../experiments/tracking.qmd); mixing monitoring checks into the same experiment as training runs makes both harder to query
+- the same pattern logs any recurring quality check, not just drift — a per-batch or per-run qc summary belongs here as readily as a ks statistic, as long as it's logged with a consistent tag so later runs are comparable
+
 next: [feedback, retraining & validation](retraining.qmd)

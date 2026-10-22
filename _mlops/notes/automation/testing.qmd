@@ -57,4 +57,26 @@ def test_predictions_match_saved_pipeline(client):
 - the full tests also reject malformed inputs, check missing-artifact startup, and confirm a failed workflow does not become a candidate
 - fixed examples catch regressions; use representative evaluation data and subgroup analysis to assess prediction quality beyond these examples
 
+## typed code
+
+- a type hint annotates a function's expected parameter and return types; it doesn't change runtime behaviour by itself, but lets an editor and a type checker catch mismatches before the code runs [typing documentation](https://docs.python.org/3/library/typing.html)
+
+```python
+def check_candidate(report: dict[str, float], threshold: float = 0.75) -> bool:
+    return report["validation_auc"] >= threshold
+```
+
+- mypy is a static type checker; it reads annotated code without running it and reports where inferred types disagree with the annotations [mypy documentation](https://mypy.readthedocs.io/en/stable/)
+- type hints pay off most at function boundaries — inputs and outputs other code depends on — rather than on every local variable
+- pydantic models, already used for [request validation in serving](../packaging-serving/serving.qmd), double as typed, runtime-checked data structures; prefer one over an untyped dict once a shape is used in more than one place
+
+## git workflow & code review
+
+- a branch is an independent line of development; working on a feature or fix branch instead of directly on `main` keeps in-progress work out of the deployable history
+- a pull request (pr) proposes merging one branch into another; it's the unit code review happens against, and usually the trigger for a [ci workflow](ci-cd.qmd) to run
+- a reviewer checks a pr for correctness, clarity, and risk before merging; for an ml change this includes whether a claimed improvement is backed by a validation result, not just that the code runs
+- a commit message should explain why a change was made — the diff already shows what changed
+- a protected branch can require passing checks and at least one approval before a merge is allowed; pairing this with the [ci gate](ci-cd.qmd) stops a broken or untested change from reaching `main` [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- for a clinical or otherwise regulated system, the pr and its review are themselves part of the [audit trail](../governance/governance.qmd): who approved a change, and why, should be reconstructable later
+
 next: [ci/cd pipelines](ci-cd.qmd)
