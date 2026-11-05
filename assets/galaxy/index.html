@@ -6,7 +6,7 @@
 <title>Research Galaxy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 
 <style>
@@ -15,44 +15,42 @@
    suns are either disciplines (what fields the work spans) or
    approach stages (how the work actually gets done); switching
    lenses re-forms the same stars into a different constellation.
-   color: deep space navy, a warm paper accent for chrome, a
-   desaturated categorical palette (one hue per sun) for the suns only.
-   type: Fraunces (display) + IBM Plex Sans (ui) + IBM Plex Mono (data)
+   color: plotly's own look — white canvas, slate-blue chart text,
+   its default qualitative palette for the suns.
+   type: a single sans-serif (Open Sans, plotly's own default) everywhere.
 ----------------------------------------------------------------- */
 :root{
-  --bg:#090c15;
-  --bg-elev:#121728;
-  --bg-elev-2:#181f36;
-  --fg:#eef1fb;
-  --fg-dim:#8d96b8;
-  --fg-faint:#5a6287;
-  --accent:#e8b96a;
-  --line:#2a3150;
-  --edge:#4e5c99;
-  --star:#eef1fb;
-  color-scheme: dark;
+  --bg:#ffffff;
+  --bg-elev:#f8f9fb;
+  --bg-elev-2:#eef1f6;
+  --fg:#2a3f5f;
+  --fg-dim:#5c6b82;
+  --fg-faint:#9099ab;
+  --accent:#636efa;
+  --line:#e4e7ec;
+  --edge:#c9cfdb;
+  --star:#2a3f5f;
+  color-scheme: light;
 
-  --c-genomics:#f2a154;
-  --c-imaging:#6a9fd8;
-  --c-survival:#c08fe0;
-  --c-statsepi:#8fd0c9;
-  --c-ml:#e8617a;
-  --c-systems:#e8d35c;
-  --c-dataeng:#c99a73;
-  --c-structural:#f49ac2;
-  --c-clinical:#7fc97f;
-  --c-scicomm:#b0a8a0;
+  --c-genomics:#EF553B;
+  --c-imaging:#636EFA;
+  --c-survival:#AB63FA;
+  --c-statsepi:#00CC96;
+  --c-ml:#FFA15A;
+  --c-systems:#19D3F3;
+  --c-dataeng:#FF6692;
+  --c-structural:#51C56A;
+  --c-clinical:#F45DA8;
+  --c-scicomm:#D8A200;
 
-  --c-eda:#6fb8e0;
-  --c-feateng:#e3a85c;
-  --c-stats:#6fd4c0;
-  --c-validation:#e8617a;
-  --c-interp:#b48ee0;
-  --c-usability:#7fc97f;
+  --c-eda:#636EFA;
+  --c-feateng:#EF553B;
+  --c-stats:#00CC96;
+  --c-validation:#AB63FA;
+  --c-interp:#FFA15A;
+  --c-usability:#19D3F3;
 
-  --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-ui:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-ui:'Open Sans', verdana, arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 *{box-sizing:border-box;}
@@ -64,21 +62,6 @@ body{
   font-family:var(--font-ui);
   overflow:hidden;
   position:relative;
-}
-
-body::after{
-  content:"";
-  position:fixed; inset:0;
-  background-image:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.35) 0, transparent 60%),
-    radial-gradient(1px 1px at 80% 15%, rgba(255,255,255,.3) 0, transparent 60%),
-    radial-gradient(1.5px 1.5px at 60% 70%, rgba(255,255,255,.25) 0, transparent 60%),
-    radial-gradient(1px 1px at 30% 85%, rgba(255,255,255,.3) 0, transparent 60%),
-    radial-gradient(1px 1px at 92% 60%, rgba(255,255,255,.3) 0, transparent 60%),
-    radial-gradient(1.5px 1.5px at 45% 35%, rgba(255,255,255,.2) 0, transparent 60%),
-    radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,.25) 0, transparent 60%);
-  pointer-events:none;
-  z-index:0;
 }
 
 .stage{ position:fixed; inset:0; z-index:1; }
@@ -102,17 +85,18 @@ header{
   display:flex;
   flex-direction:column;
   gap:6px;
-  background:linear-gradient(to bottom, rgba(9,12,21,.92) 0%, rgba(9,12,21,.55) 70%, transparent 100%);
+  background:linear-gradient(to bottom, rgba(255,255,255,.96) 0%, rgba(255,255,255,.8) 70%, rgba(255,255,255,0) 100%);
 }
 header h1{
   margin:0;
-  font-family:var(--font-display);
-  font-weight:560;
+  font-family:var(--font-ui);
+  font-weight:700;
   font-size:clamp(22px, 4vw, 30px);
-  letter-spacing:.01em;
+  letter-spacing:-.01em;
   text-wrap:balance;
+  color:var(--fg);
 }
-header h1 em{ font-style:italic; color:var(--accent); font-weight:500; }
+header h1 em{ font-style:normal; color:var(--accent); font-weight:700; }
 header p{
   margin:0;
   max-width:56ch;
@@ -121,13 +105,6 @@ header p{
   line-height:1.5;
   min-height:1.5em;
 }
-header .hint{
-  font-family:var(--font-mono);
-  font-size:11px;
-  color:var(--fg-faint);
-  letter-spacing:.02em;
-}
-
 .controls{
   display:flex;
   flex-wrap:wrap;
@@ -144,9 +121,10 @@ header .hint{
   gap:2px;
 }
 .pill-btn{
-  font-family:var(--font-mono);
-  font-size:11px;
-  letter-spacing:.03em;
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.01em;
   color:var(--fg-dim);
   background:transparent;
   border:1px solid transparent;
@@ -157,9 +135,8 @@ header .hint{
 }
 .lens-switch .pill-btn:hover{ color:var(--fg); }
 .lens-switch .pill-btn.active{
-  color:var(--bg);
+  color:#ffffff;
   background:var(--accent);
-  font-weight:500;
 }
 .pill-btn.ghost{
   background:var(--bg-elev);
@@ -183,10 +160,11 @@ header .hint{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font-family:var(--font-mono);
-  font-size:11px;
+  font-family:var(--font-ui);
+  font-size:12px;
+  font-weight:600;
   color:var(--fg-dim);
-  background:rgba(18,23,40,.85);
+  background:rgba(255,255,255,.92);
   backdrop-filter:blur(6px);
   border:1px solid var(--line);
   border-radius:999px;
@@ -194,16 +172,17 @@ header .hint{
   cursor:pointer;
   transition:border-color .15s, color .15s;
   user-select:none;
+  box-shadow:0 1px 3px rgba(42,63,95,.06);
 }
-.chip:hover{ color:var(--fg); border-color:var(--fg-faint); }
-.chip.selected{ color:var(--fg); border-color:currentColor; box-shadow:0 0 0 1px currentColor inset; }
+.chip:hover{ border-color:var(--fg-faint); }
+.chip.selected{ border-color:currentColor; box-shadow:0 0 0 1px currentColor inset; }
 .chip .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
 
 .tooltip{
   position:fixed;
   z-index:5;
   pointer-events:none;
-  background:var(--bg-elev-2);
+  background:#ffffff;
   border:1px solid var(--line);
   border-radius:8px;
   padding:8px 11px;
@@ -211,20 +190,20 @@ header .hint{
   font-size:12px;
   line-height:1.45;
   color:var(--fg);
-  box-shadow:0 10px 30px rgba(0,0,0,.45);
+  box-shadow:0 10px 28px rgba(42,63,95,.14);
   opacity:0;
   transition:opacity .1s;
 }
-.tooltip .t-title{ font-weight:600; margin-bottom:2px; }
-.tooltip .t-meta{ color:var(--fg-dim); font-family:var(--font-mono); font-size:10.5px; }
-.tooltip .t-hint{ color:var(--fg-faint); font-size:10.5px; margin-top:4px; }
+.tooltip .t-title{ font-weight:700; margin-bottom:2px; }
+.tooltip .t-meta{ color:var(--fg-dim); font-size:11px; }
+.tooltip .t-hint{ color:var(--fg-faint); font-size:11px; margin-top:4px; }
 
 .panel{
   position:fixed;
   top:0; right:0; bottom:0;
   width:min(400px, 94vw);
   z-index:6;
-  background:var(--bg-elev);
+  background:#ffffff;
   border-left:1px solid var(--line);
   padding-top: max(22px, env(safe-area-inset-top, 0px));
   padding-right: max(22px, env(safe-area-inset-right, 0px));
@@ -235,7 +214,7 @@ header .hint{
   gap:14px;
   transform:translateX(100%);
   transition:transform .28s cubic-bezier(.2,.8,.2,1);
-  box-shadow:-20px 0 50px rgba(0,0,0,.4);
+  box-shadow:-20px 0 40px rgba(42,63,95,.1);
   overflow-y:auto;
 }
 .panel.open{ transform:translateX(0); }
@@ -252,27 +231,30 @@ header .hint{
 }
 .panel-close:hover{ color:var(--fg); border-color:var(--fg-faint); }
 .panel-kicker{
-  font-family:var(--font-mono);
-  font-size:11px;
+  font-family:var(--font-ui);
+  font-size:11.5px;
+  font-weight:700;
   letter-spacing:.04em;
   text-transform:uppercase;
   color:var(--accent);
 }
 .panel h2{
-  font-family:var(--font-display);
-  font-weight:560;
-  font-size:24px;
+  font-family:var(--font-ui);
+  font-weight:700;
+  font-size:23px;
   margin:0;
-  line-height:1.15;
+  line-height:1.2;
   text-wrap:balance;
+  color:var(--fg);
 }
 .panel .org{ color:var(--fg-dim); font-size:13.5px; line-height:1.5; }
-.panel .org b{ color:var(--fg); font-weight:500; }
-.panel .when{ font-family:var(--font-mono); font-size:11px; color:var(--fg-faint); }
+.panel .org b{ color:var(--fg); font-weight:700; }
+.panel .when{ font-family:var(--font-ui); font-size:11.5px; color:var(--fg-faint); }
 .panel .blurb{ font-size:14px; line-height:1.6; color:var(--fg); }
 .panel .section-label{
-  font-family:var(--font-mono);
-  font-size:10.5px;
+  font-family:var(--font-ui);
+  font-size:11px;
+  font-weight:700;
   letter-spacing:.06em;
   text-transform:uppercase;
   color:var(--fg-faint);
@@ -280,8 +262,9 @@ header .hint{
 }
 .tag-row{ display:flex; flex-wrap:wrap; gap:6px; }
 .tag{
-  font-family:var(--font-mono);
-  font-size:11px;
+  font-family:var(--font-ui);
+  font-size:11.5px;
+  font-weight:600;
   padding:4px 9px;
   border-radius:6px;
   background:var(--bg-elev-2);
@@ -289,9 +272,7 @@ header .hint{
   color:var(--fg-dim);
 }
 .tag.cat{
-  color:var(--bg);
-  border-color:transparent;
-  font-weight:500;
+  font-weight:700;
   cursor:pointer;
 }
 
@@ -304,7 +285,7 @@ header .hint{
   font-family:var(--font-ui);
   font-size:13px;
   color:var(--fg);
-  background:var(--bg-elev-2);
+  background:var(--bg-elev);
   border:1px solid var(--line);
   border-radius:8px;
   padding:9px 11px;
@@ -313,7 +294,7 @@ header .hint{
 }
 .related-btn:hover{ border-color:var(--fg-faint); transform:translateX(2px); }
 .related-btn .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
-.related-btn .meta{ color:var(--fg-faint); font-family:var(--font-mono); font-size:10.5px; margin-left:auto; white-space:nowrap; }
+.related-btn .meta{ color:var(--fg-faint); font-size:11px; margin-left:auto; white-space:nowrap; }
 
 .empty-panel{
   color:var(--fg-faint);
@@ -333,7 +314,6 @@ header .hint{
   <header>
     <h1>research <em>galaxy</em></h1>
     <p id="headerBlurb"></p>
-    <div class="hint">drag a star · hover for a peek · click to pin it and read the full story</div>
     <div class="controls">
       <div class="lens-switch">
         <button class="pill-btn active" data-lens="discipline">by discipline</button>
@@ -491,12 +471,16 @@ const HEADER_TEXT = {
   approach:   'the same work, regrouped by how it actually got done — the stages i consistently reach for on a real project, from first look at the data to something someone else can run.',
 };
 
-/* resolve css-var colors to literal hex once, for d3/svg use */
+/* resolve css-var colors to literal hex/rgb once, for d3/svg use */
 const probe = document.createElement('div');
 document.body.appendChild(probe);
 function resolveColor(cssVar){
   probe.style.color = cssVar;
   return getComputedStyle(probe).color;
+}
+function toRgba(rgbString, alpha){
+  const m = rgbString.match(/[\d.]+/g);
+  return `rgba(${m[0]}, ${m[1]}, ${m[2]}, ${alpha})`;
 }
 [...disciplineDefs, ...approachDefs].forEach(c=>{ c.hex = resolveColor(c.color); });
 const lineHex = resolveColor('var(--line)');
@@ -513,11 +497,6 @@ const W = 1400, H = 900;
 const svg = d3.select(stage).append('svg')
   .attr('viewBox', [0,0,W,H])
   .attr('preserveAspectRatio','xMidYMid meet');
-
-const svgDefs = svg.append('defs');
-const glow = svgDefs.append('filter').attr('id','starGlow').attr('x','-200%').attr('y','-200%').attr('width','500%').attr('height','500%');
-glow.append('feGaussianBlur').attr('stdDeviation', 3.4).attr('result','blur');
-glow.append('feMerge').html('<feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/>');
 
 const zoomLayer = svg.append('g');
 const zoomBehavior = d3.zoom()
@@ -610,7 +589,7 @@ function renderLens(lens, animate){
     .attr('stroke', edgeHex)
     .attr('stroke-width', 1.6)
     .attr('stroke-linecap', 'round')
-    .style('opacity', 0.6);
+    .style('opacity', 0.55);
 
   nodeSel = nodeG.selectAll('g.node')
     .data(nodes)
@@ -624,21 +603,20 @@ function renderLens(lens, animate){
       g.append('circle')
         .attr('class','ring')
         .attr('r', d.r)
-        .attr('fill', d.data.hex)
-        .attr('fill-opacity', 0.16)
+        .attr('fill', toRgba(d.data.hex, 0.14))
         .attr('stroke', d.data.hex)
-        .attr('stroke-width', 1.4)
-        .attr('filter','url(#starGlow)');
+        .attr('stroke-width', 2);
       g.append('circle')
-        .attr('r', 2.6)
+        .attr('r', 2.8)
         .attr('fill', d.data.hex);
     } else {
       g.append('circle')
         .attr('class','star')
         .attr('r', d.r)
         .attr('fill', starHex)
-        .attr('fill-opacity', 0.9)
-        .attr('filter','url(#starGlow)');
+        .attr('fill-opacity', 0.88)
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 1.5);
     }
   });
 
@@ -647,11 +625,14 @@ function renderLens(lens, animate){
     .attr('y', d=> -(d.r + 8))
     .attr('text-anchor','middle')
     .attr('fill', d=>d.data.hex)
-    .attr('font-family', "'IBM Plex Mono', monospace")
-    .attr('font-size', 10.5)
-    .attr('letter-spacing', '.02em')
-    .style('pointer-events','none')
-    .style('text-shadow','0 2px 8px rgba(0,0,0,.8)');
+    .attr('font-family', "'Open Sans', verdana, arial, sans-serif")
+    .attr('font-weight', 700)
+    .attr('font-size', 11)
+    .attr('letter-spacing', '.01em')
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 3)
+    .attr('paint-order', 'stroke')
+    .style('pointer-events','none');
 
   computeBounds();
 
@@ -700,15 +681,15 @@ function applyHighlight(){
   nodeSel.transition().duration(180).style('opacity', d=> !neighbors ? 1 : (neighbors.has(d.id) ? 1 : 0.12));
   linkSel.transition().duration(180).style('opacity', d=>{
     const s = d.source.id||d.source, t = d.target.id||d.target;
-    if (!neighbors) return 0.6;
-    return (neighbors.has(s) && neighbors.has(t)) ? 0.95 : 0.05;
+    if (!neighbors) return 0.55;
+    return (neighbors.has(s) && neighbors.has(t)) ? 0.9 : 0.05;
   });
 }
 
 function wireInteraction(){
   nodeSel
     .on('mouseenter', function(ev,d){
-      d3.select(this).style('filter','brightness(1.35)');
+      d3.select(this).style('filter','drop-shadow(0 3px 8px rgba(42,63,95,.3))');
       const label = d.kind==='category' ? d.data.label : d.data.name;
       const meta = d.kind==='category' ? d.data.desc : [d.data.org, d.data.when].filter(Boolean).join(' · ');
       const hint = d.kind==='category' ? `${d.degree} connected` : 'click to pin + read more';
@@ -794,7 +775,8 @@ document.getElementById('panelClose').addEventListener('click', (e)=>{
 function openEntryPanel(d){
   const catChips = (d[key]||[]).map(cid=>{
     const c = defs.find(x=>x.id===cid);
-    return c ? `<span class="tag cat" style="background:${c.hex}" data-id="${c.id}">${c.label}</span>` : '';
+    if (!c) return '';
+    return `<span class="tag cat" style="background:${toRgba(c.hex,0.13)};border-color:${c.hex};color:${c.hex}" data-id="${c.id}">${c.label}</span>`;
   }).join('');
   const toolChips = d.tools.map(t=>`<span class="tag">${t}</span>`).join('');
   const metaLine = [d.who, d.when].filter(Boolean).join(' · ');
